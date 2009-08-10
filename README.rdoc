@@ -33,7 +33,7 @@ if all else fails, mail mwotton@gmail.com with tales of woe.
 
 == INSTALL:
 
-* sudo gem install Hubris
+* sudo gem install hubris
 
 == LICENSE:
 

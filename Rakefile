@@ -2,7 +2,7 @@ require 'rubygems'
 gem 'hoe', '>= 2.1.0'
 require 'hoe'
 require 'fileutils'
-require './lib/Hubris'
+require './lib/hubris'
 
 Hoe.plugin :newgem
 # Hoe.plugin :website
@@ -11,11 +11,10 @@ Hoe.plugin :newgem
 # Generate all the Rake tasks
 # Run 'rake -T' to see list of generated tasks (from gem root directory)
 $hoe = Hoe.spec 'Hubris' do
-  self.developer 'FIXME full name', 'FIXME email'
+  self.developer 'Mark Wotton, with some fixes here by James Britt', 'james@neurogami.com'
   self.post_install_message = 'PostInstall.txt' # TODO remove if post-install message not required
-  self.rubyforge_name       = self.name # TODO this is default value
-  # self.extra_deps         = [['activesupport','>= 2.0.2']]
-
+  self.rubyforge_name       = "hubris"
+  self.summary = 'tool to help build .so files from haskel code for use in Ruby via dl' 
 end
 
 require 'newgem/tasks'
