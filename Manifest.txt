@@ -3,8 +3,8 @@ Manifest.txt
 PostInstall.txt
 README.rdoc
 Rakefile
-bin/jhc_builder.sh
-lib/Hubris.rb
+bin/jhc_builder
+lib/hubris.rb
 sample/Makefile
 sample/Test.hs
 sample/hsload.rb
