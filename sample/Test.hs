@@ -25,4 +25,4 @@ fibonacci_hs = fromIntegral . fibonacci . fromIntegral
 
 foreign export ccall fibonacci_hs :: CInt -> CInt
 
-
+-- main = putStrLn "foo"
