@@ -1,11 +1,9 @@
 History.txt
 Manifest.txt
 PostInstall.txt
-README
 README.rdoc
 Rakefile
 bin/jhc_builder.sh
-foo.hs
 lib/Hubris.rb
 sample/Makefile
 sample/Test.hs
@@ -17,5 +15,3 @@ spec/Hubris_spec.rb
 spec/spec.opts
 spec/spec_helper.rb
 tasks/rspec.rake
-test/test_Hubris.rb
-test/test_helper.rb
