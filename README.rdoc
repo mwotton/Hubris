@@ -35,6 +35,11 @@ if all else fails, mail mwotton@gmail.com with tales of woe.
 
 * sudo gem install hubris
 
+== CONTRIBUTORS:
+
+Mark Wotton
+James Britt
+
 == LICENSE:
 
 (The MIT License)
