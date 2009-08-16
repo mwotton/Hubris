@@ -31,39 +31,54 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 ## Install
 
 1. Install the Hubris gem from RubyForge
+
+<code>
     sudo gem install hubris
+</code>
 
 2. Or live on the bleeding edge and install the latest from Github
+
+<code>
     gem source --add http://gems.github.com
     sudo gem install mwotton-hubris
+</code>
 
 3. Get the [Haskell Platform][haskell_platform] and install this for your platform (now we have GHC for building JHC)
 
 4. Install Darcs (so we can access the JHC repository)
+
+<code>
     sudo cabal update
     sudo cabal install --global darcs
+</code>
 
-Don't worry too much about any warnings that you may see while this builds.
+  Don't worry too much about any warnings that you may see while this builds.
 
 5. Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead)
+
+<code>
     darcs get http://repetae.net/repos/jhc
     cd jhc/src
     darcs get --partial http://repetae.net/repos/Doc
     cd ../lib
     darcs get --partial http://darcs.haskell.org/packages/haskell98
     darcs get --partial http://darcs.haskell.org/packages/containers
+</code>
 
 6. Potential gotchas
 
-JHC doesn't have a heap of mac users, so there were a few problems I had in installing.
+  JHC doesn't have a heap of mac users, so there were a few problems I had in installing.
 
-in ./src/data/rts/jhc_rts_header.h:
+  in ./src/data/rts/jhc_rts_header.h:
+
+<code>
     -#include <endian.h>
     +#include <sys/types.h>
     +#include <sys/param.h>
+</code>
 
-make libs doesn't always seem to work off the bat. so long as jhc builds, it's probably ok
-for the moment - copy the jhc binary in the root jhc directory to somewhere in your $PATH.
+  make libs doesn't always seem to work off the bat. so long as jhc builds, it's probably ok
+  for the moment - copy the jhc binary in the root jhc directory to somewhere in your $PATH.
 
 ## Contributors
 
