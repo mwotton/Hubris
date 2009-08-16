@@ -4,41 +4,62 @@
 
 == DESCRIPTION:
 
-  This is a quick and dirty way to call haskell functions from ruby.
+This is a quick and dirty way to call Haskell functions from ruby.
 
 == FEATURES/PROBLEMS:
 
-  Hubris will wash your car, lie to your boss, and salvage your love life.
-  If you are very, very lucky, it might also let you get some uber-fast
-  functional goodness into your ruby programs through the back door.
+Hubris will wash your car, lie to your boss, and salvage your love life.
+If you are very, very lucky, it might also let you get some uber-fast
+functional goodness into your ruby programs through the back door.
 
 == SYNOPSIS:
 
-  Eventually, we'll integrate with RubyInline or something similar, 
-  so we can write inline Haskell. Until that happy day:
+Eventually, we'll integrate with RubyInline or something similar, 
+so we can write inline Haskell. Until that happy day:
 
-    write a haskell file (say sample/foo.hs) with some ccall exports declared
-    call "jhc_builder.sh foo.hs". This will build "libfoo.so".
-    write a ruby file similar to sample/hsload.rb in order to call the functions from ruby
+* write a haskell file (say sample/foo.hs) with some ccall exports declared
+* call "jhc_builder.sh foo.hs". This will build "libfoo.so".
+* write a ruby file similar to sample/hsload.rb in order to call the functions from ruby
 
-if all else fails, mail mwotton@gmail.com with tales of woe.
+If all else fails, mail mwotton@gmail.com with tales of woe.
 
 == REQUIREMENTS:
 
-  - jhc <http://repetae.net/computer/jhc/>
-  - gcc < ... oh, come on. don't tell me you don't have it. >
-  - ruby 1.8.6 or higher
-  - linux (mostly because jhc doesn't seem to be working on Mac at the moment.)
-  - bash
+* jhc (John's Haskell Compiler)
+* gcc (oh, come on. don't tell me you don't have it)
+* ruby 1.8.6 or higher
+* mac osx or linux
+* bash
 
 == INSTALL:
 
-* sudo gem install hubris
+* Install the Hubris gem from RubyForge
+
+  sudo gem install hubris
+
+* Or live on the bleeding edge and install the latest from Github
+
+  gem source --add http://gems.github.com
+  sudo gem install mwotton-hubris
+
+* Get the Haskell Platform <http://hackage.haskell.org/platform/>
+  * We need GHC in order build JHC
+  * We also need Darcs to access the JHC repository
+
+* Install JHC (the instructions at <http://repetae.net/computer/jhc/> are out of date so use the following)
+
+  darcs get http://repetae.net/repos/jhc
+  cd jhc/src
+  darcs get --partial http://repetae.net/repos/Doc
+  cd ../lib
+  darcs get --partial http://darcs.haskell.org/packages/haskell98
+  darcs get --partial http://darcs.haskell.org/packages/containers
+
 
 == CONTRIBUTORS:
 
-Mark Wotton
-James Britt
+* Mark Wotton
+* James Britt
 
 == LICENSE:
 
