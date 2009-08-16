@@ -1,6 +1,6 @@
 = Hubris
 
-* http://github.com/mwotton/Hubris
+http://github.com/mwotton/Hubris
 
 == DESCRIPTION:
 
@@ -28,19 +28,19 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 * jhc (John's Haskell Compiler)
 * gcc (oh, come on. don't tell me you don't have it)
 * ruby 1.8.6 or higher
-* mac osx or linux
+* Mac OSX or Linux
 * bash
 
 == INSTALL:
 
 * Install the Hubris gem from RubyForge
 
-  sudo gem install hubris
+    sudo gem install hubris
 
 * Or live on the bleeding edge and install the latest from Github
 
-  gem source --add http://gems.github.com
-  sudo gem install mwotton-hubris
+    gem source --add http://gems.github.com
+    sudo gem install mwotton-hubris
 
 * Get the Haskell Platform <http://hackage.haskell.org/platform/>
   * We need GHC in order build JHC
@@ -48,12 +48,12 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 
 * Install JHC (the instructions at <http://repetae.net/computer/jhc/> are out of date so use the following)
 
-  darcs get http://repetae.net/repos/jhc
-  cd jhc/src
-  darcs get --partial http://repetae.net/repos/Doc
-  cd ../lib
-  darcs get --partial http://darcs.haskell.org/packages/haskell98
-  darcs get --partial http://darcs.haskell.org/packages/containers
+    darcs get http://repetae.net/repos/jhc
+    cd jhc/src
+    darcs get --partial http://repetae.net/repos/Doc
+    cd ../lib
+    darcs get --partial http://darcs.haskell.org/packages/haskell98
+    darcs get --partial http://darcs.haskell.org/packages/containers
 
 
 == CONTRIBUTORS:
