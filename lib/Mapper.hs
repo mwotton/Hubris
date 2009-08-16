@@ -1,9 +1,9 @@
-{-# LANGUAGE FlexibleInstances, ForeignFunctionInterface #-}
+{-# LANGUAGE FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
 {-# INCLUDE <ruby.h> #-}
 
 module Mapper where
-import qualified Data.ByteString.Char8 as B -- do we need Unicode?
-import Data.Array.CArray as CArray
+-- import qualified Data.ByteString.Char8 as B -- do we need Unicode?
+-- import Data.Array.CArray as CArray
 import Data.Word
 import Foreign.C.String
 import Foreign.Ptr
@@ -23,9 +23,9 @@ instance Rubyable Int where
   toRuby a  = T_FIXNUM a
   fromRuby (T_FIXNUM a) = a
 
-instance Rubyable Integer where
-  toRuby a  = T_ a
-  fromRuby (T_FIXNUM a) = a
+-- instance Rubyable Integer where
+--   toRuby a  = T_BIGNUM a
+--   fromRuby (T_BIGNUM a) = a
 
 instance Rubyable Bool where
   toRuby False  = T_FALSE
@@ -33,16 +33,16 @@ instance Rubyable Bool where
   fromRuby T_FALSE = False
   fromRuby T_TRUE = True
 
-instance Rubyable (CArray Word RValue) where 
-  toRuby arr = T_ARRAY arr
-  fromRuby (T_ARRAY arr) = arr
+-- instance Rubyable (CArray Word RValue) where 
+--   toRuby arr = T_ARRAY arr
+--   fromRuby (T_ARRAY arr) = arr
 
-instance Rubyable a => Rubyable [a] where
-  toRuby l = unsafePerformIO $ do
-             arr <- rb_ary_new2 (length l)
-             mapM_ (\(i,x) -> rb_ary_store i arr x) l
-             return $ T_ARRAY arr
-  fromRuby (T_ARRAY arr) = map fromRuby $ CArray.elems arr
+-- instance Rubyable a => Rubyable [a] where
+--   toRuby l = unsafePerformIO $ do
+--              arr <- rb_ary_new2 (length l)
+--              mapM_ (\(i,x) -> rb_ary_store i arr x) l
+--              return $ T_ARRAY arr
+--   fromRuby (T_ARRAY arr) = map fromRuby $ CArray.elems arr
 
 instance Rubyable RString where
     toRuby (RString cstr) = T_STRING cstr
@@ -52,6 +52,9 @@ instance Rubyable RSymbol where
     toRuby (RSymbol index) = T_SYMBOL index
     fromRuby (T_SYMBOL index) = RSymbol index
 
+instance Integral a => Rubyable a where
+    toRuby a = T_FIXNUM (fromIntegral a)
+    fromRuby (T_FIXNUM a) = fromIntegral a
 
 -- --            | T_REGEXP     
 --               -- the array needs to be managed by ruby
