@@ -30,44 +30,58 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 
 ## Install
 
-1. Install the Hubris gem from RubyForge
+- Install the Hubris gem from RubyForge
 
-
+<pre>
     sudo gem install hubris
+</pre>
 
-2. Or live on the bleeding edge and install the latest from Github
+- Or live on the bleeding edge and install the latest from Github
 
-
+<pre>
     gem source --add http://gems.github.com
     sudo gem install mwotton-hubris
+</pre>
 
-3. Get the [Haskell Platform][haskell_platform]
-  * We need GHC in order build JHC
-  * We also need Darcs to access the JHC repository
+- Get the [Haskell Platform][haskell_platform] and install this for your platform (now we have GHC for building JHC)
 
-4. Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead)
+- Install Darcs (so we can access the JHC repository)
 
+<pre>
+    sudo cabal update
+    sudo cabal install --global darcs
+</pre>
 
-    darcs get http://repetae.net/repos/jhc
+  Don't worry too much about any warnings that you may see while this builds.
+
+- Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead). Before you start get a cup of tea, and get comfy. This may take a while...
+
+<pre>
+    darcs get --partial http://repetae.net/repos/jhc
     cd jhc/src
     darcs get --partial http://repetae.net/repos/Doc
     cd ../lib
     darcs get --partial http://darcs.haskell.org/packages/haskell98
     darcs get --partial http://darcs.haskell.org/packages/containers
+</pre>
 
-5. Potential gotchas
+- Copy the jhc binary in the root jhc directory to somewhere in your $PATH
 
-  JHC doesn't have a heap of mac users, so there were a few problems I had in installing.
+## Troubleshooting installation
+
+JHC doesn't have a heap of mac users, so there were a few problems I had in installing.
 
 in ./src/data/rts/jhc_rts_header.h:
--#include <endian.h>
-+#include <sys/types.h>
-+#include <sys/param.h>
+
+    -#include <endian.h>
+    +#include <sys/types.h>
+    +#include <sys/param.h>
 
 make libs doesn't always seem to work off the bat. so long as jhc builds, it's probably ok
 for the moment - copy the jhc binary in the root jhc directory to somewhere in your $PATH.
 
 ## Contributors
+
 
 * Mark Wotton
 * James Britt
