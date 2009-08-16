@@ -55,6 +55,18 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
     darcs get --partial http://darcs.haskell.org/packages/haskell98
     darcs get --partial http://darcs.haskell.org/packages/containers
 
+5. Potential gotchas
+
+  JHC doesn't have a heap of mac users, so there were a few problems I had in installing.
+
+in ./src/data/rts/jhc_rts_header.h:
+-#include <endian.h>
++#include <sys/types.h>
++#include <sys/param.h>
+
+make libs doesn't always seem to work off the bat. so long as jhc builds, it's probably ok
+for the moment - copy the jhc binary in the root jhc directory to somewhere in your $PATH.
+
 ## Contributors
 
 * Mark Wotton
