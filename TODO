@@ -1,0 +1,2 @@
+[ ] use jeweller as gem manager http://github.com/technicalpickles/jeweler/tree/master
+[ ] fix DL::Importer problem in ruby 1.8 (Josh)
