@@ -48,7 +48,7 @@ EOF
         end
       end
       functions.keys.each do |fname|
-        file.print "\n#{fname} :: RValue -> IO RValue\n"
+        file.print "\n#{fname} :: RValue -> RValue\n"
         # end
       end
       
