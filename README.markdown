@@ -31,12 +31,16 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 
 1. Install the Hubris gem from RubyForge
 
+`
     sudo gem install hubris
+`
 
 2. Or live on the bleeding edge and install the latest from Github
 
+`
     gem source --add http://gems.github.com
     sudo gem install mwotton-hubris
+`
 
 3. Get the [Haskell Platform][haskell_platform]
   * We need GHC in order build JHC
@@ -44,12 +48,14 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 
 4. Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead)
 
+`
     darcs get http://repetae.net/repos/jhc
     cd jhc/src
     darcs get --partial http://repetae.net/repos/Doc
     cd ../lib
     darcs get --partial http://darcs.haskell.org/packages/haskell98
     darcs get --partial http://darcs.haskell.org/packages/containers
+`
 
 ## Contributors
 
