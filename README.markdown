@@ -1,18 +1,14 @@
-= Hubris
+# Hubris
 
-http://github.com/mwotton/Hubris
-
-== DESCRIPTION:
+## Description
 
 This is a quick and dirty way to call Haskell functions from ruby.
-
-== FEATURES/PROBLEMS:
 
 Hubris will wash your car, lie to your boss, and salvage your love life.
 If you are very, very lucky, it might also let you get some uber-fast
 functional goodness into your ruby programs through the back door.
 
-== SYNOPSIS:
+## Synopsis
 
 Eventually, we'll integrate with RubyInline or something similar, 
 so we can write inline Haskell. Until that happy day:
@@ -23,7 +19,7 @@ so we can write inline Haskell. Until that happy day:
 
 If all else fails, mail mwotton@gmail.com with tales of woe.
 
-== REQUIREMENTS:
+## Requirements
 
 * jhc (John's Haskell Compiler)
 * gcc (oh, come on. don't tell me you don't have it)
@@ -31,22 +27,22 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 * Mac OSX or Linux
 * bash
 
-== INSTALL:
+## Install
 
-* Install the Hubris gem from RubyForge
+1. Install the Hubris gem from RubyForge
 
     sudo gem install hubris
 
-* Or live on the bleeding edge and install the latest from Github
+2. Or live on the bleeding edge and install the latest from Github
 
     gem source --add http://gems.github.com
     sudo gem install mwotton-hubris
 
-* Get the Haskell Platform <http://hackage.haskell.org/platform/>
+3. Get the [Haskell Platform][haskell_platform]
   * We need GHC in order build JHC
   * We also need Darcs to access the JHC repository
 
-* Install JHC (the instructions at <http://repetae.net/computer/jhc/> are out of date so use the following)
+4. Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead)
 
     darcs get http://repetae.net/repos/jhc
     cd jhc/src
@@ -55,13 +51,12 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
     darcs get --partial http://darcs.haskell.org/packages/haskell98
     darcs get --partial http://darcs.haskell.org/packages/containers
 
-
-== CONTRIBUTORS:
+## Contributors
 
 * Mark Wotton
 * James Britt
 
-== LICENSE:
+## License
 
 (The MIT License)
 
@@ -85,3 +80,7 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+[haskell_platform]: http://hackage.haskell.org/platform/
+[jhc]: http://repetae.net/computer/jhc/
