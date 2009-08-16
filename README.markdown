@@ -57,7 +57,7 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 - Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead). Before you start get a cup of tea, and get comfy. This may take a while...
 
 <pre>
-    darcs get http://repetae.net/repos/jhc
+    darcs get --partial http://repetae.net/repos/jhc
     cd jhc/src
     darcs get --partial http://repetae.net/repos/Doc
     cd ../lib
@@ -81,6 +81,7 @@ make libs doesn't always seem to work off the bat. so long as jhc builds, it's p
 for the moment - copy the jhc binary in the root jhc directory to somewhere in your $PATH.
 
 ## Contributors
+
 
 * Mark Wotton
 * James Britt
