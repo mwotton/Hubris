@@ -39,8 +39,7 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
       gem source --add http://gems.github.com
       sudo gem install mwotton-hubris
 
-3. Get the [Haskell Platform][haskell_platform] (so we have GHC for building JHC, )
-  * install this for your platform
+3. Get the [Haskell Platform][haskell_platform] and install this for your platform (now we have GHC for building JHC)
 
 4. Install Darcs (so we can access the JHC repository)
 
