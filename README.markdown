@@ -54,7 +54,7 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 
   Don't worry too much about any warnings that you may see while this builds.
 
-- Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead). Before you start get a cup of tea, and get comfy. This may take a while...
+- Install [JHC][jhc] (the instructions there are slightly out of date so use the following instead). Before you start, go get a cup of tea and get comfy. This may take a while...
 
 <pre>
     darcs get --partial http://repetae.net/repos/jhc
@@ -65,17 +65,41 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
     darcs get --partial http://darcs.haskell.org/packages/containers
 </pre>
 
+## FIXME Install DrIFT http://repetae.net/computer/haskell/DrIFT/
+
+
+Now we can start building JHC.
+
+<pre>
+    autoreconf -i
+    ./configure
+</pre>
+
+For Mac OSX there are a couple of patches you'll need to apply before you build.
+
+Make the following change in ./src/data/rts/jhc_rts_header.h at line XXXX:
+
+    -#include <endian.h>
+    +#include <sys/types.h>
+    +#include <sys/param.h>
+
+Also in the Makefile add '' before $@ at line 732:
+
+  sed -e 's/^{-# OPTIONS/{-# OPTIONS_GHC -w/' -i '' $@
+
+Now you should be able to build it.
+
+<pre>
+    make
+</pre>
+
 - Copy the jhc binary in the root jhc directory to somewhere in your $PATH
+
 
 ## Troubleshooting installation
 
 JHC doesn't have a heap of mac users, so there were a few problems I had in installing.
 
-in ./src/data/rts/jhc_rts_header.h:
-
-    -#include <endian.h>
-    +#include <sys/types.h>
-    +#include <sys/param.h>
 
 make libs doesn't always seem to work off the bat. so long as jhc builds, it's probably ok
 for the moment - copy the jhc binary in the root jhc directory to somewhere in your $PATH.
