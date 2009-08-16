@@ -2,9 +2,13 @@ require 'dl/import'
 require 'tempfile'
 
 module Hubris
-  VERSION = '0.0.1'
+  VERSION = '0.0.2'
   class Hubris
-    extend DL::Importer # Importable in 1.8, FIXME
+    if RUBY_VERSION =~ /^1\.8/
+      extend DL::Importable
+    else
+      extend DL::Importer
+    end
     
     def initialize(haskell_str)
       build_jhc(haskell_str)
