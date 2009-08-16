@@ -32,7 +32,9 @@ If all else fails, mail mwotton@gmail.com with tales of woe.
 
 1. Install the Hubris gem from RubyForge
 
+<pre>
       sudo gem install hubris
+</pre>
 
 2. Or live on the bleeding edge and install the latest from Github
 
