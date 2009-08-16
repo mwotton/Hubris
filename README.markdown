@@ -71,6 +71,7 @@ for the moment - copy the jhc binary in the root jhc directory to somewhere in y
 
 * Mark Wotton
 * James Britt
+* Josh Price
 
 ## License
 
