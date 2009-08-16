@@ -43,8 +43,9 @@ EOF
       # tricky bit: generating interface for each
       functions={}
       haskell_str.each_line do |line|
-        # if line ~= /^[^ ]/ then
-        functions[line.split(/ /)[0]]=1
+        if line =~ /^[^ ]/ then
+          functions[line.split(/ /)[0]]=1
+        end
       end
       functions.keys.each do |fname|
         file.print "\n#{fname} :: RValue -> IO RValue\n"
