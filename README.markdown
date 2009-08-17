@@ -90,19 +90,11 @@ Also in the Makefile add '' before $@ at line 732:
 Now you should be able to build it.
 
 <pre>
-    make
+    make && sudo make install
 </pre>
 
-- Copy the jhc binary in the root jhc directory to somewhere in your $PATH
-
-
-## Troubleshooting installation
-
-JHC doesn't have a heap of mac users, so there were a few problems I had in installing.
-
-
-make libs doesn't always seem to work off the bat. so long as jhc builds, it's probably ok
-for the moment - copy the jhc binary in the root jhc directory to somewhere in your $PATH.
+- this will copy the jhc binary to /usr/local/bin. If it's not in your
+  PATH already, add "export PATH=$PATH:/usr/local/bin" to your .bashrc.
 
 ## Contributors
 
