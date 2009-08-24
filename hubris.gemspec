@@ -16,5 +16,7 @@ Gem::Specification.new do |s|
   s.rubyforge_project = %q{hubris}
   s.rubygems_version = %q{1.3.0}
   s.summary = %q{Hubris is a Ruby Haskell bridge allowing you to call Haskell functions from your Ruby code.}
-
+  %w{rspec open4}.each do |gem|
+    s.add_dependency(gem)
+  end
 end

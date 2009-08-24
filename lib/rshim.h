@@ -1,7 +1,7 @@
 #ifndef __rshim_h__
 #define __rshim_h__
-#define HAVE_STRUCT_TIMESPEC 1 
-// this is about as filthy as it looks, but c2hs chokes otherwise.
+// #define HAVE_STRUCT_TIMESPEC 1 
+/* this is about as filthy as it looks, but c2hs chokes otherwise. */
 
 #include <ruby.h>
 
@@ -26,6 +26,15 @@
 
 // did this really have to be a macro? BAD MATZ
 unsigned int rtype(VALUE obj);
+VALUE int2fix(int i);
+int fix2int(VALUE x);
+double num2dbl(VALUE x);
+
+/* enum StaticValue { */
+/*   QNIL = Qnil, */
+/*   QFALSE = Qfalse, */
+/*   QTRUE = Qtrue, */
+/* }; */
 
 
 // argh, and again
@@ -63,3 +72,5 @@ enum RubyType {
  RT_MASK     = T_MASK   ,
 };
 #endif
+
+

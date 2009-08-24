@@ -1,10 +1,11 @@
 require 'dl/import'
 require 'tempfile'
+require 'rubygems'
 require 'open4'
 
-module Hubris
+class Hubris
   VERSION = '0.0.2'
-  class Hubris
+#  class Hubris
     if RUBY_VERSION =~ /^1\.8/
       extend DL::Importable
     else
@@ -23,58 +24,75 @@ module Hubris
 output: #{stdout.read}
 error:  #{stderr.read}
 EOF
-        return [false,msg]
+        return [false,str + "\n" + msg]
       else
-        return [true,""]
+        return [true,str + "\n"]
       end
     end
     
     def build_jhc(haskell_str)
+      system("rm hs.out_code.c")
       file=Tempfile.new("TempHs.hs")
       # cheap way: assert type sigs binding to RValue. Might be able to do better after,
       # but this'll do for the moment
       file.print(<<EOF
+{-# LANGUAGE FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
+import Foreign.Ptr
 import RubyMap
-import Mapper
+
 main :: IO ()
 main = return ()
 EOF
                  )
       file.print(haskell_str)
+      puts("Hask: #{haskell_str}\n")
       # TODO add foreign export calls immediately for each toplevel func
       # cheap hacky way: first word on each line, nub it to get rid of
       # function types.
       # tricky bit: generating interface for each
       functions={}
       haskell_str.each_line do |line|
-        if line =~ /^[^ ]/ then
-          functions[line.split(/ /)[0]]=1
+        # skkeeeeeeetchy. FIXME use haskell-src-exts or something more sensible here
+        if line =~ /^[^ \-{].*/ then
+          functions[line.split(/ /)[0]]=1   
         end
       end
+      if functions.size() == 0
+        # no point going on, there's nothing to load
+        return
+      end
+
       functions.keys.each do |fname|
-        file.print "\n#{fname} :: RValue -> RValue\n"
-        # end
+        file.print <<"EOF"
+
+#{fname} :: RValue -> RValue
+#{fname}_external :: Value -> Value
+#{fname}_external x = toRuby $ #{fname} $ fromRuby x
+foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value
+
+EOF
       end
       
       file.flush
-      # this is so dumb
+      # this is so dumb. Go delete the file when we're done
+      # debugging
       system("cp #{file.path} #{file.path}.hs")
-      success, msg = noisy("jhc  #{file.path}.hs -ilib")
-      if not success then
+      success, msg = noisy("jhc -dc #{file.path}.hs -ilib")
+      if not (success || File.exists?("hs.out_code.c")) then
         file.rewind
         raise SyntaxError, "JHC build failed:\nsource\n#{file.read}\n#{msg}"
       end
       # output goes to hs_out.code.c
       # don't need to grep out main any more
       # FIXME unique name for dynamic lib
-      lib = Tempfile.new("libDyn.so")
+      libname = "lib_#{rand().to_s.slice(2,10)}.dylib"
     
-      success,msg = noisy("gcc '-std=gnu99' -D_GNU_SOURCE -D'-falign-functions=4' '-D_JHC_STANDALONE=0' -ffast-math -Wshadow -Wextra -Wall -Wno-unused-parameter -o libdynhs.so \
- -DNDEBUG -D_JHC_STANDALONE=0 -O3 -fPIC -shared #{file.dirname}/hs.out_code.c -o {lib.name}")
+      success,msg = noisy("gcc -c '-std=gnu99' -D_GNU_SOURCE '-falign-functions=4' '-D_JHC_STANDALONE=0' -ffast-math -Wshadow -Wextra\
+ -Wall -Wno-unused-parameter -DNDEBUG -O3 -fPIC -shared ./hs.out_code.c ./lib/rshim.o -I/opt/local/lib/ruby/1.8/i686-darwin9/ -I./lib -o #{libname}")
       if not success then
         raise SyntaxError, "C build failed:\n#{msg}"
       end
-      dlload lib.name
+      Hubris.dlload libname
       # get all the headers from ... somewhere
       headers = []
       headers.each do |header|
@@ -84,6 +102,7 @@ EOF
       hs_init
       # TODO load all the object headers into the lib
     end
-  end
+ 
+# end
   
 end
