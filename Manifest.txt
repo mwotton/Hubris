@@ -1,4 +1,4 @@
-History.markdown
+HISTORY.markdown
 Manifest.txt
 PostInstall.txt
 README.markdown
