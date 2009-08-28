@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://github.com/mwotton/hubris}
   s.rdoc_options = ["--inline-source", "--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubyforge_project = %q{hubris}
+  #  s.rubyforge_project = %q{hubris}
   s.rubygems_version = %q{1.3.0}
   s.summary = %q{Hubris is a Ruby Haskell bridge allowing you to call Haskell functions from your Ruby code.}
   %w{rspec open4}.each do |gem|
