@@ -2,7 +2,7 @@ require 'dl/import'
 require 'tempfile'
 require 'rubygems'
 require 'open4'
-require 'ffi'
+# require 'ffi'
 
 module Hubris
   VERSION = '0.0.2'
