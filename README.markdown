@@ -14,8 +14,10 @@ Eventually, we'll integrate with RubyInline or something similar,
 so we can write inline Haskell. Until that happy day:
 
 * write a haskell file (say sample/foo.hs) with some ccall exports declared
-* call "jhc_builder.sh foo.hs". This will build "libfoo.so".
+* call "jhc_builder foo.hs". This will build "libfoo.so".
 * write a ruby file similar to sample/hsload.rb in order to call the functions from ruby
+
+(The Makefile in ./sample encapsulates these steps)
 
 If all else fails, mail mwotton@gmail.com with tales of woe.
 

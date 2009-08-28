@@ -1,28 +1,8 @@
-#ifndef __rshim_h__
-#define __rshim_h__
-// #define HAVE_STRUCT_TIMESPEC 1 
-/* this is about as filthy as it looks, but c2hs chokes otherwise. */
-
+#ifndef __FOOSHIM__
+#define __FOOSHIM__ 1
+#define HAVE_STRUCT_TIMESPEC 1 
 #include <ruby.h>
-
-#ifdef HAVE_RUBY_ENCODING_H
-
-#include <ruby/encoding.h>
-
-#define ENCODED_STR_NEW2(str, encoding) \
-  ({ \
-    VALUE _string = rb_str_new2((const char *)str); \
-    int _enc = rb_enc_find_index(encoding); \
-    rb_enc_associate_index(_string, _enc); \
-    _string; \
-  })
-
-#else
-
-#define ENCODED_STR_NEW2(str, encoding) \
-  rb_str_new2((const char *)str)
-
-#endif
+/* this is about as filthy as it looks, but c2hs chokes otherwise. */
 
 // did this really have to be a macro? BAD MATZ
 unsigned int rtype(VALUE obj);

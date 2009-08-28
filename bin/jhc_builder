@@ -10,8 +10,15 @@ echo "main :: IO ()" >> $tmp
 echo "main = return ()"  >> $tmp
 
 cd tmp
-jhc "$1"
+jhc -dc "$1"
 sed -i 's/^main(/disregard_main(/' hs.out_code.c
-gcc '-std=gnu99' -D_GNU_SOURCE '-falign-functions=4' -ffast-math -Wshadow -Wextra -Wall -Wno-unused-parameter -o libdynhs.so \
-  hs.out_code.c -DNDEBUG -O3 -fPIC -shared
+
+# for linux
+#gcc '-std=gnu99' -D_GNU_SOURCE '-falign-functions=4' -ffast-math\
+# -Wshadow -Wextra -Wall -Wno-unused-parameter -o libdynhs.so\
+# hs.out_code.c -DNDEBUG -O3 -fPIC -shared '-D_JHC_STANDALONE=0' 
+# for mac
+gcc '-std=gnu99' -D_GNU_SOURCE '-falign-functions=4' -ffast-math\
+ -Wshadow -Wextra -Wall -Wno-unused-parameter -o libdynhs.so\
+ hs.out_code.c -DNDEBUG -O3 -fPIC -shared '-D_JHC_STANDALONE=0'  -dynamiclib
 mv libdynhs.so ..
