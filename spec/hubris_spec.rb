@@ -1,12 +1,12 @@
 require File.dirname(__FILE__) + '/spec_helper.rb'
 
 # just want to check it's actually possible to load a library dynamically
-# describe "dlload" Ado
-#   it "can actually build and load a C level dylib stupidly" do
-#     system "cd sample; make"
-#     `cd sample; ruby hsload.rb`.chomp.should eql("144")
-#   end
-# end
+describe "dlload" do
+  it "can actually build and load a C level dylib stupidly" do
+    system "cd sample; make"
+    `cd sample; ruby hsload.rb`.chomp.should eql("144")
+  end
+end
 
 class Target
   include Hubris
