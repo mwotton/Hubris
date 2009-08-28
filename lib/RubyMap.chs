@@ -13,7 +13,7 @@ import Foreign.C.String
 {# context lib="rshim" #}
 
 
-{# enum RubyType {} deriving (Eq) #} -- maybe Ord?
+{# enum RubyType {} deriving (Eq, Show) #} -- maybe Ord?
 
 
 type Value = CULong
@@ -57,7 +57,7 @@ data RValue = T_NIL
             | T_FALSE      
 --            | T_DATA       
             | T_SYMBOL Word -- interned string
---              deriving Show
+
 
 
 -- qnil = 4
@@ -76,8 +76,12 @@ toRuby r = case r of
            x -> error ("sorry, haven't implemented that yet.")
 
 fromRuby :: Value -> RValue
-fromRuby v = case toEnum $ rtype v of
+fromRuby v = case target of
                RT_NIL -> T_NIL
                RT_FIXNUM -> T_FIXNUM $ fix2int v
                RT_STRING -> undefined
                RT_FLOAT ->  T_FLOAT $ num2dbl v
+               RT_BIGNUM -> error "no bignum yet"
+               _ -> error (show target)
+  where target :: RubyType
+        target = toEnum $ rtype v
