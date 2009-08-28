@@ -1,31 +1,25 @@
-require 'dl/import'
+
 require 'tempfile'
 require 'rubygems'
 require 'open4'
-# require 'ffi'
+
+# TODO delete old files
 
 module Hubris
   VERSION = '0.0.2'
 
-  #  class Hubris
-  #     if RUBY_VERSION =~ /^1\.8/
-  #       extend DL::Importable
-  #     else
-  #       extend DL::Importer
-  #     end
   def inline(haskell_str) 
     return jhcbuild(haskell_str)
   end
   
   def jhcbuild(haskell_str)
-    system("rm hs.out_code.c")
+    system("rm hs.out_code.c 2>/dev/null")
     file=Tempfile.new("TempHs.hs")
     # FIXME unique name for dynamic lib
     libname = "libfoo_#{rand().to_s.slice(2,10)}"
-    # libname = "libfoo"
     libfile = libname + ".bundle"
-    # cheap way: assert type sigs binding to RValue. Might be able to do better after,
-    # but this'll do for the moment
+
+    
     file.print(<<EOF
 {-# LANGUAGE FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
 import Foreign.Ptr
@@ -36,7 +30,7 @@ main = return ()
 EOF
                )
     file.print(haskell_str)
-    puts("Hask: #{haskell_str}\n")
+    # puts("Hask: #{haskell_str}\n")
     # TODO add foreign export calls immediately for each toplevel func
     # cheap hacky way: first word on each line, nub it to get rid of
     # function types.
@@ -52,7 +46,9 @@ EOF
       # no point going on, there's nothing to load
       return
     end
-
+    
+    # cheap way: assert type sigs binding to RValue. Might be able to do better after,
+    # but this'll do for the moment
     functions.keys.each do |fname|
       file.print <<"EOF"
 
@@ -74,7 +70,7 @@ EOF
       raise SyntaxError, "JHC build failed:\nsource\n#{file.read}\n#{msg}"
     end
     modName = self.class
-    puts "My name is #{modName}"
+    # puts "My name is #{modName}"
                 
     loaderCode =<<"EOF"
 /* so, here's the story. We have the functions, and we need to expose them to Ruby */
@@ -82,16 +78,14 @@ EOF
 #include <rshim.h>
 VALUE #{modName} = Qnil;
 void Init_#{libname}() {
-  // maybe init haskell side stuff later
-    printf("Yay, we've called the init function\\n");
-    // allegedly this works for pre-existing modules as well
+    // maybe init haskell side stuff later
+    //printf("Yay, we've called the init function\\n");
+    // allegedly this works for pre-existing classes as well
     #{modName} = rb_define_class("#{modName}", rb_cObject);
 EOF
-
-    
     functions.keys.each do |functionName| 
       loaderCode += "rb_define_method(#{modName},\"#{functionName}\",#{functionName}_external, 1);"
-      loaderCode += "printf(\" and defined #{modName},#{functionName},#{functionName}_external, 1\\n\");"
+      # loaderCode += "printf(\" and defined #{modName},#{functionName},#{functionName}_external, 1\\n\");"
     end
     loaderCode += "}"
 
@@ -105,7 +99,8 @@ EOF
     
     f.write(loaderCode)
     f.close
-    
+
+    # FIXME generalise to linux, this is probably Mac only.
     lDFLAGS = [ '-dynamiclib',
                 '-fPIC', 
                 '-shared', 
@@ -130,7 +125,7 @@ EOF
     
     iNCLUDES = ['-I/opt/local/include/ruby-1.9.1/', '-I./lib']
 
-    system "rm #{libfile}"
+    system "rm #{libfile} 2>/dev/null"
     
     success,msg = noisy("gcc " + [cPPFLAGS, cFLAGS, lDFLAGS, iNCLUDES, sRC].join(" "))
 

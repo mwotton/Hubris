@@ -19,8 +19,6 @@ end
 describe Target do
   it "can whine like a little baby when you pass it bad haskell" do
     t=Target.new
-    puts t.class
-
     lambda{ t.inline("broken _ = (1 + \"a string\")")}.should raise_error(SyntaxError)
   end
 
@@ -55,5 +53,15 @@ EOF
     # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
   end
   
+  def be_small
+    simple_matcher("a small number") { |given| given == 2 or given == 4}
+  end
 
+  it "can be called in a block" do
+    t=Target.new
+    t.inline("foo (T_FIXNUM i) = T_FIXNUM (i*2)")
+    (1..2).each do |x|
+      t.foo(x).should be_small
+    end
+  end
 end
