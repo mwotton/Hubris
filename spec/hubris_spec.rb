@@ -38,7 +38,6 @@ describe Target do
     t=Target.new
     t.inline(<<EOF
 mydouble (T_FIXNUM i) = T_FIXNUM (i + i)
-mydouble (T_BIGNUM i) = T_BIGNUM (i + i)
 EOF
                            )
     t.mydouble(1).should eql(2)
