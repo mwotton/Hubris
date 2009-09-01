@@ -7,7 +7,7 @@ require 'open4'
 module Hubris
   VERSION = '0.0.2'
 
-  def inline(haskell_str) 
+  def inline(haskell_str)
     return jhcbuild(haskell_str)
   end
 
@@ -81,7 +81,7 @@ void Init_#{libname}() {
     // allegedly this works for pre-existing classes as well
     #{modName} = rb_define_class("#{modName}", rb_cObject);
     EOF
-    functions.keys.each do |functionName| 
+    functions.keys.each do |functionName|
       loaderCode += "rb_define_method(#{modName},\"#{functionName}\",#{functionName}_external, 1);"
       # loaderCode += "printf(\" and defined #{modName},#{functionName},#{functionName}_external, 1\\n\");"
     end
@@ -100,24 +100,24 @@ void Init_#{libname}() {
 
     # FIXME generalise to linux, this is probably Mac only.
     lDFLAGS = [ '-dynamiclib',
-                '-fPIC', 
-                '-shared', 
+                '-fPIC',
+                '-shared',
                 '-lruby',
                 '-undefined suppress',
                 '-flat_namespace'
               ]
     cPPFLAGS = [
-                '-D_GNU_SOURCE', 
-                '-D_JHC_STANDALONE=0', 
-                '-DNDEBUG' 
+                '-D_GNU_SOURCE',
+                '-D_JHC_STANDALONE=0',
+                '-DNDEBUG'
                ]
-    cFLAGS = ['-std=gnu99', 
-              '-falign-functions=4', 
-              '-ffast-math', 
+    cFLAGS = ['-std=gnu99',
+              '-falign-functions=4',
+              '-ffast-math',
               '-Wshadow', '-Wextra', '-Wall', '-Wno-unused-parameter',
               "-O3 -o #{libfile}"]
     sRC = [
-           './hs.out_code.c', 
+           './hs.out_code.c',
            './lib/rshim.c'
           ]
 
