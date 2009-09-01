@@ -93,10 +93,9 @@ void Init_#{libname}() {
     # also chucking the loader code in there.
     system("echo '#include <rshim.h>' > temp.c;")
     system("grep -v '#include \<rshim.h\>' < hs.out_code.c | sed  's/ALIGN(/JHCS_ALIGN(/g'  >> temp.c; mv temp.c hs.out_code.c;")
-    f = File.open("hs.out_code.c", "a")  # fixme take it back to append
-
-    f.write(loaderCode)
-    f.close
+    File.open("hs.out_code.c", "a") {|io| # fixme take it back to append
+      io.write(loaderCode)
+    }
 
     # FIXME generalise to linux, this is probably Mac only.
     lDFLAGS = [ '-dynamiclib',
