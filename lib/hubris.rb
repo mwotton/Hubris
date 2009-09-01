@@ -137,15 +137,15 @@ EOF
 end
 
 def noisy(str)
-  pid, stdin, stdout, stderr = Open4::popen4(str)
-  ignored, status = Process::waitpid2 pid
-  if status != 0
-    msg = <<"EOF"
+  pid, stdin, stdout, stderr = Open4.popen4 str
+  ignored, status = Process.waitpid2 pid
+  if status == 0
+    [true, str + "\n"]
+  else
+    msg = <<-"EOF"
 output: #{stdout.read}
 error:  #{stderr.read}
-EOF
-    return [false,str + "\n" + msg]
-  else
-    return [true,str + "\n"]
+    EOF
+    [false, str + "\n" + msg]
   end
 end
