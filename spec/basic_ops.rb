@@ -80,15 +80,18 @@ END
     t.reverse("foot").should eql("toof")
   end
   
-  def be_small
-    simple_matcher("a small number") { |given| given == 2 or given == 4}
-  end
-
-  it "can be called in a block" do
-    t=Target.new
-    t.inline("foo (T_FIXNUM i) = T_FIXNUM (i*2)")
-    (1..2).each do |x|
-      t.foo(x).should be_small
-    end
-  end
+  
+#   def be_quick
+#     simple_matcher("a small duration") { |given| given < 1.0 }
+#   end
+  
+#   it "caches its output" do
+#     t=Target.new
+#     t.inline("foobar _ = T_STRING \"rar rar rar\"")
+#     before = Time.now
+#     t.inline("foobar _ = T_STRING \"rar rar rar\"")
+#     after = Time.now
+#     (after-before).should be_quick
+#   end
+  
 end

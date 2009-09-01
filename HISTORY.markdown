@@ -11,3 +11,7 @@
 ## 0.0.3 2009-08-29
 
 * first working inline version (ints only, jhc only, very limited)
+
+## 0.0.4 2009-09-01
+
+* floats, strings, nils, booleans now working.

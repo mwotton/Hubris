@@ -10,6 +10,8 @@ import Foreign.Ptr
 import Foreign.C.Types	
 import Foreign.C.String
 import System.IO.Unsafe (unsafePerformIO)
+import Foreign.Marshal.Array
+
 -- import PackedString
 {# context lib="rshim" #}
 {# enum RubyType {} deriving (Eq, Show) #} -- maybe Ord?
@@ -43,7 +45,7 @@ data RValue = T_NIL
             | T_STRING String
 --            | T_REGEXP     
               -- the array needs to be managed by ruby
---            | T_ARRAY (CArray Word RValue)
+            | T_ARRAY (Array Word RValue)A
             | T_FIXNUM Int --fixme, probably
               -- the hash needs to be managed by ruby
             | T_HASH  Int -- definitely FIXME - native ruby hashes, or going to translitrate?
