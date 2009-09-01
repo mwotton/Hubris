@@ -1,4 +1,3 @@
-
 require 'tempfile'
 require 'rubygems'
 require 'open4'
@@ -11,7 +10,7 @@ module Hubris
   def inline(haskell_str) 
     return jhcbuild(haskell_str)
   end
-  
+
   def jhcbuild(haskell_str)
     system("rm hs.out_code.c 2>/dev/null")
     file=Tempfile.new("TempHs.hs")
@@ -19,7 +18,6 @@ module Hubris
     libname = "libfoo_#{rand().to_s.slice(2,10)}"
     libfile = libname + ".bundle"
 
-    
     file.print(<<EOF
 {-# LANGUAGE FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
 import Foreign.Ptr
@@ -47,7 +45,7 @@ EOF
       # no point going on, there's nothing to load
       return
     end
-    
+
     # cheap way: assert type sigs binding to RValue. Might be able to do better after,
     # but this'll do for the moment
     functions.keys.each do |fname|
@@ -60,7 +58,7 @@ foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value -> 
 
 EOF
     end
-    
+
     file.flush
     # this is so dumb. Go delete the file when we're done
     # debugging
@@ -72,7 +70,7 @@ EOF
     end
     modName = self.class
     # puts "My name is #{modName}"
-                
+
     loaderCode =<<"EOF"
 /* so, here's the story. We have the functions, and we need to expose them to Ruby */
 #include <stdio.h>
@@ -97,7 +95,7 @@ EOF
     system("echo '#include <rshim.h>' > temp.c;");
     system("grep -v '#include \<rshim.h\>' < hs.out_code.c | sed  's/ALIGN(/JHCS_ALIGN(/g'  >> temp.c; mv temp.c hs.out_code.c;");
     f = File.open("hs.out_code.c", "a")  # fixme take it back to append
-    
+
     f.write(loaderCode)
     f.close
 
@@ -123,11 +121,11 @@ EOF
            './hs.out_code.c', 
            './lib/rshim.c'
           ]
-    
+
     iNCLUDES = ['-I/opt/local/include/ruby-1.9.1/', '-I./lib']
 
     system "rm #{libfile} 2>/dev/null"
-    
+
     success,msg = noisy("gcc " + [cPPFLAGS, cFLAGS, lDFLAGS, iNCLUDES, sRC].join(" "))
 
     if not success then
@@ -136,8 +134,6 @@ EOF
     require libname
     # return Fooclever
   end
-  
-
 end
 
 def noisy(str)
