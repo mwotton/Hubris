@@ -37,7 +37,7 @@ EOF
     functions={}
     haskell_str.each_line do |line|
       # skkeeeeeeetchy. FIXME use haskell-src-exts or something more sensible here
-      if line =~ /^[^ \-{].*/ then
+      if line =~ /^[^ \-{].*/
         functions[line.split(/ /)[0]]=1   
       end
     end
@@ -64,7 +64,7 @@ EOF
     # debugging
     system("cp #{file.path} #{file.path}.hs")
     success, msg = noisy("jhc -dc #{file.path}.hs -ilib")
-    if not (success || File.exists?("hs.out_code.c")) then
+    if not (success || File.exists?("hs.out_code.c"))
       file.rewind
       raise SyntaxError, "JHC build failed:\nsource\n#{file.read}\n#{msg}"
     end
@@ -128,7 +128,7 @@ EOF
 
     success,msg = noisy("gcc " + [cPPFLAGS, cFLAGS, lDFLAGS, iNCLUDES, sRC].join(" "))
 
-    if not success then
+    if not success
       raise SyntaxError, "C build failed:\n#{msg}"
     end
     require libname
@@ -139,7 +139,7 @@ end
 def noisy(str)
   pid, stdin, stdout, stderr = Open4::popen4(str)
   ignored, status = Process::waitpid2 pid
-  if status != 0 then
+  if status != 0
     msg = <<"EOF"
 output: #{stdout.read}
 error:  #{stderr.read}
