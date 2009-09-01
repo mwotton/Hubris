@@ -14,20 +14,19 @@ UPDATE: so it now works, for fixed length integers, sort of. (What a ringing end
 
 anyway, as you can see in the spec, you can use it a little like this:
 
-<pre>
-class Target
-  include Hubris
-  def negate(i)
-    return -i
-  end
-end
+    class Target
+      include Hubris
+      def negate(i)
+        return -i
+      end
+    end
 
-t.inline "mydouble (T_FIXNUM i) = T_FIXNUM (i + i)"
-t.inline "mytriple (T_FIXNUM i) = T_FIXNUM (i * 3)"
-puts t.negate(3)
-puts t.mydouble(i)
-puts t.mytriple(i)
-</pre>
+    t = Target.new
+    t.inline "mydouble (T_FIXNUM i) = T_FIXNUM (i + i)"
+    t.inline "mytriple (T_FIXNUM i) = T_FIXNUM (i * 3)"
+    puts t.negate(3)
+    puts t.mydouble(i)
+    puts t.mytriple(i)
 
 This code is a bit of a black triangle <http://rampantgames.com/blog/2004/10/black-triangle.html>
 It doesn't seem like it does much, but here we have inline code generation, some marshalling support, 
@@ -40,36 +39,32 @@ as before, if all else fails, mail mwotton@gmail.com with tales of woe.
 
 ## Requirements
 
-* haskell platform (or ghc-6.8.2 or better and c2hs)
-* jhc (John's Haskell Compiler)
-* gcc (oh, come on. don't tell me you don't have it)
+* One of Haskell Implementations
+    * haskell platform (or ghc-6.8.2 or better and c2hs)
+    * jhc (John's Haskell Compiler)
+    * gcc (oh, come on. don't tell me you don't have it)
 * ruby 1.8.6 or higher
-* Mac OSX or Linux
-* bash
+* Mac OS X or Linux
+* zsh or bash
 
 ## Install
 
 - Install the Hubris gem from RubyForge
 
-<pre>
-    sudo gem install hubris
-</pre>
+        sudo gem install hubris
 
 - Or live on the bleeding edge and install the latest from Github
 
-<pre>
-    gem source --add http://gems.github.com
-    sudo gem install mwotton-hubris
-</pre>
+        gem source --add http://gems.github.com
+        sudo gem install mwotton-hubris
 
 - Get the [Haskell Platform][haskell_platform] and install this for your platform (now we have GHC for building JHC)
 - you may have to run "sudo cabal install binary zlib utf8-string readline fgl" - am not entirely sure what's in the Haskell
   Platform. Feedback on this step appreciated.
 - JHC is thankfully now a little easier to build. Follow the instructions at http://repetae.net/computer/jhc/building.shtml - the
   most recent tested working version is http://repetae.net/dist/jhc-0.7.1.tar.gz.
-<pre>
-    ./configure && make && sudo make install
-</pre>
+
+        ./configure && make && sudo make install
 
 should do the trick.
 
@@ -77,7 +72,8 @@ should do the trick.
   PATH already, add "export PATH=$PATH:/usr/local/bin" to your .bashrc.
 
 to create RubyMap.hs:
-  c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc RubyMap.chs  
+
+        c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc RubyMap.chs  
 
 FIXME this is not a gem of lucid clarity right now
 
@@ -87,6 +83,7 @@ FIXME this is not a gem of lucid clarity right now
 * Mark Wotton
 * James Britt
 * Josh Price
+* Tatsuhiro Ujihisa
 
 ## License
 
