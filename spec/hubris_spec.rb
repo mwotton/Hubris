@@ -16,7 +16,7 @@ class Target
 end
   
 
-describe Target do
+describe "Target" do
   it "can whine like a little baby when you pass it bad haskell" do
     t=Target.new
     lambda{ t.inline("broken _ = (1 + \"a string\")")}.should raise_error(SyntaxError)
@@ -36,10 +36,8 @@ describe Target do
 
   it "can double an int in Haskell-land" do
     t=Target.new
-    t.inline(<<EOF
-mydouble (T_FIXNUM i) = T_FIXNUM (i + i)
-EOF
-                           )
+    t.inline("mydouble (T_FIXNUM i) = T_FIXNUM (i + i)")
+
     t.mydouble(1).should eql(2)
     # and it doesn't wipe out other methods on the class
     t.foo.should eql(14)
@@ -52,16 +50,10 @@ EOF
     # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
   end
   
-  def be_small
-    simple_matcher("a small number") { |given| given == 2 or given == 4}
-  end
-
-  it "can be called in a block" do
-    t=Target.new
-    t.inline("foo (T_FIXNUM i) = T_FIXNUM (i*2)")
-    (1..2).each do |x|
-      t.foo(x).should be_small
-    end
+  it "can handle doubles" do
+    t = Target.new
+    t.inline("triple (T_FLOAT a) = T_FLOAT (a*3.0)")
+    t.triple(3.4).should eql(10.2)
   end
   
   it "can handle booleans" do
@@ -74,5 +66,29 @@ END
              )
     t.my_negate(false).should eql(true) 
     t.my_negate(true).should eql(false) 
+  end
+  
+  it "can handle nils too" do
+    t=Target.new
+    t.inline("give_me_a_nil _ = T_NIL")
+    t.give_me_a_nil(1).should eql(nil)
+  end
+  
+  it "can handle strings" do
+    t=Target.new
+    t.inline("reverse (T_STRING s) = T_STRING $ Prelude.reverse s")
+    t.reverse("foot").should eql("toof")
+  end
+  
+  def be_small
+    simple_matcher("a small number") { |given| given == 2 or given == 4}
+  end
+
+  it "can be called in a block" do
+    t=Target.new
+    t.inline("foo (T_FIXNUM i) = T_FIXNUM (i*2)")
+    (1..2).each do |x|
+      t.foo(x).should be_small
+    end
   end
 end

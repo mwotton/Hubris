@@ -25,6 +25,7 @@ module Hubris
 import Foreign.Ptr
 import RubyMap
 import Control.Exception
+
 main :: IO ()
 main = return ()
 EOF

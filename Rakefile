@@ -32,6 +32,7 @@ task :clean do
   FileList['lib/*.hi', 'lib/*.ho', 'lib/RubyMap.chs.h', 'lib/RubyMap.chi','lib/RubyMap.hs', 
            'hs.out', 'lib/*.o', 'libfoo_*.bundle', 'lib/hs.out_code.c' ].each do |f|
     system "rm #{f}"
-    system "cd sample; make clean"
   end
+  system "cd sample; make clean"
+
 end
