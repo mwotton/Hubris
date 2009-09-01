@@ -23,3 +23,15 @@ end
 #require 'newgem/tasks'
 Dir['tasks/**/*.rake'].each { |t| load t }
 
+task :spec => "lib/RubyMap.hs"
+task "lib/RubyMap.hs" => "lib/RubyMap.chs" do
+  system "c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
+end
+
+task :clean do
+  FileList['lib/*.hi', 'lib/*.ho', 'lib/RubyMap.chs.h', 'lib/RubyMap.chi','lib/RubyMap.hs', 
+           'hs.out', 'lib/*.o', 'libfoo_*.bundle', 'lib/hs.out_code.c' ].each do |f|
+    system "rm #{f}"
+    system "cd sample; make clean"
+  end
+end

@@ -28,10 +28,10 @@ describe Target do
 {- another silly comment -}")}.should_not raise_error
   end
   
-#   it "can sing like a golden bird when you treat it right, aw yeah" do
-#     Hubris.build("working _ = T_FIXNUM (1+2)").should_not raise_error
-#     Fooclever.working(1).should eql(3)
-#   end
+  it "can sing like a golden bird when you treat it right, aw yeah" do
+    t=Target.new
+    lambda { t.inline("working _ = T_FIXNUM (1+2)") }.should_not raise_error
+  end
 
 
   it "can double an int in Haskell-land" do
@@ -62,5 +62,17 @@ EOF
     (1..2).each do |x|
       t.foo(x).should be_small
     end
+  end
+  
+  it "can handle booleans" do
+    t=Target.new
+    t.inline(<<END
+my_negate T_TRUE = T_FALSE
+my_negate T_FALSE = T_TRUE
+my_negate _ = error "argh, something went wrong"
+END
+             )
+    t.my_negate(false).should eql(true) 
+    t.my_negate(true).should eql(false) 
   end
 end

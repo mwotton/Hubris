@@ -11,22 +11,16 @@ import Foreign.C.Types
 import Foreign.C.String
 
 {# context lib="rshim" #}
-
-
 {# enum RubyType {} deriving (Eq, Show) #} -- maybe Ord?
+{# enum ruby_special_consts as RubyConsts {} deriving (Eq,Show) #}
 
-
-type Value = CULong
-
-
--- -- FIXME jhc doesn't like importing floating point numbers, for some reason.
-
+type Value = CULong -- FIXME, we'd prefer to import the type VALUE directly
 foreign import ccall unsafe "ruby.h rb_str_to_str" rb_str_to_str :: Value -> CString
 foreign import ccall unsafe "ruby.h rb_ary_new2" rb_ary_new :: Int -> IO Value
 foreign import ccall unsafe "ruby.h rb_ary_store" rb_ary_store :: Value -> Int -> Value -> IO ()
 foreign import ccall unsafe "ruby.h rb_float_new" rb_float_new :: Double -> Value
 
--- -- we're being a bit filthy here - the interface is all macros, so we're digging in to find what it actually is
+-- we're being a bit filthy here - the interface is all macros, so we're digging in to find what it actually is
 foreign import ccall unsafe "rshim.h rtype" rtype :: Value -> Int
 foreign import ccall unsafe "rshim.h int2fix" int2fix :: Int -> Value
 foreign import ccall unsafe "rshim.h fix2int" fix2int ::  Value -> Int
@@ -71,8 +65,10 @@ toRuby r = case r of
                         -- need to take the address of the cstr, just cast it to a value
            T_STRING cstr -> undefined
            T_FIXNUM i -> int2fix i
-           --T_TRUE ->  RT_TRUE
-           --T_FALSE -> RT_FALSE
+           -- so this is just bizarre - there's no boolean type. True and False have their own types
+           -- as well as their own values.
+           T_TRUE  ->  fromIntegral $ fromEnum RUBY_Qtrue
+           T_FALSE ->  fromIntegral $ fromEnum RUBY_Qfalse
            x -> error ("sorry, haven't implemented that yet.")
 
 fromRuby :: Value -> RValue
@@ -82,6 +78,8 @@ fromRuby v = case target of
                RT_STRING -> undefined
                RT_FLOAT ->  T_FLOAT $ num2dbl v
                RT_BIGNUM -> error "no bignum yet"
+               RT_TRUE -> T_TRUE
+               RT_FALSE -> T_FALSE
                _ -> error (show target)
   where target :: RubyType
         target = toEnum $ rtype v
