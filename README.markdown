@@ -39,10 +39,9 @@ as before, if all else fails, mail mwotton@gmail.com with tales of woe.
 
 ## Requirements
 
-* One of Haskell Implementations
-    * haskell platform (or ghc-6.8.2 or better and c2hs)
-    * jhc (John's Haskell Compiler)
-    * gcc (oh, come on. don't tell me you don't have it)
+* haskell platform (or ghc-6.8.2 or better and c2hs)
+* jhc (John's Haskell Compiler)
+* gcc (oh, come on. don't tell me you don't have it)
 * ruby 1.8.6 or higher
 * Mac OS X or Linux
 * zsh or bash
