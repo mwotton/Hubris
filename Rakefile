@@ -1,4 +1,3 @@
-
 require 'rubygems'
 gem 'hoe', '>= 2.1.0'
 require 'hoe'
@@ -25,7 +24,11 @@ Dir['tasks/**/*.rake'].each { |t| load t }
 
 task :spec => "lib/RubyMap.hs"
 task "lib/RubyMap.hs" => "lib/RubyMap.chs" do
-  system "c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
+  # mac
+  # system "c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
+  #linux
+
+  system "c2hs -v --cppopts='-I/usr/local/include/ruby-1.9.1' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
 end
 
 task :clean do

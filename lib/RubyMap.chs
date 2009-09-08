@@ -4,12 +4,15 @@ module RubyMap where
 #include "rshim.h"
 #include <ruby.h>
 
--- import Data.Array.CArray as CArray
+import Control.Applicative
+import Control.Monad
 import Data.Word
 import Foreign.Ptr
 import Foreign.C.Types	
 import Foreign.C.String
+import Foreign.Storable
 import System.IO.Unsafe (unsafePerformIO)
+-- import Unsafe.Coerce    (unsafeCoerce)
 import Foreign.Marshal.Array
 
 -- import PackedString
@@ -20,8 +23,11 @@ import Foreign.Marshal.Array
 type Value = CULong -- FIXME, we'd prefer to import the type VALUE directly
 foreign import ccall unsafe "ruby.h rb_str2cstr" rb_str2cstr :: Value -> CInt -> CString
 foreign import ccall unsafe "ruby.h rb_str_new2" rb_str_new2 :: CString -> Value
-foreign import ccall unsafe "ruby.h rb_ary_new2" rb_ary_new :: Int -> IO Value
-foreign import ccall unsafe "ruby.h rb_ary_store" rb_ary_store :: Value -> Int -> Value -> IO ()
+-- foreign import ccall unsafe "ruby.h rb_ary_new2" rb_ary_new2 :: CLong -> IO Value
+--foreign import ccall unsafe "ruby.h rb_ary_push" rb_ary_push :: Value -> Value -> IO ()
+--foreign import ccall unsafe "ruby.h rb_ary_store" rb_ary_store :: Value -> Int -> Value -> IO ()
+--foreign import ccall unsafe "ruby.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
+--foreign import ccall unsafe "rshim.h rb_ary_len" rb_ary_len :: Value -> CUInt
 foreign import ccall unsafe "ruby.h rb_float_new" rb_float_new :: Double -> Value
 
 -- we're being a bit filthy here - the interface is all macros, so we're digging in to find what it actually is
@@ -45,7 +51,8 @@ data RValue = T_NIL
             | T_STRING String
 --            | T_REGEXP     
               -- the array needs to be managed by ruby
-            | T_ARRAY (Array Word RValue)A
+              -- so this is non-ideal, but hard to do much else without GHC libs.
+            | T_ARRAY [RValue]
             | T_FIXNUM Int --fixme, probably
               -- the hash needs to be managed by ruby
             | T_HASH  Int -- definitely FIXME - native ruby hashes, or going to translitrate?
@@ -58,9 +65,13 @@ data RValue = T_NIL
             | T_FALSE      
 --            | T_DATA       
             | T_SYMBOL Word -- interned string
+          --     deriving Show
+--instance Show RValue where
+--  show _ = "no real show instance, sorry"
 
-
-
+-- instance Storable RValue where
+--   peek = undefined
+--   poke = undefined
 -- qnil = 4
 -- qfalse = 0
 -- qtrue = 2
@@ -77,8 +88,12 @@ toRuby r = case r of
            T_TRUE  ->  fromIntegral $ fromEnum RUBY_Qtrue
            T_FALSE ->  fromIntegral $ fromEnum RUBY_Qfalse
            T_NIL   ->  fromIntegral $ fromEnum RUBY_Qnil
+--            T_ARRAY l -> unsafePerformIO $ do
+--                           ary <- rb_ary_new2 $ fromIntegral $ length l
+--                           mapM_ (rb_ary_push ary . toRuby) l
+--                           return undefined -- ary
            T_BIGNUM _ -> error "No implementation for Bignums yet"
-           x -> error ("sorry, haven't implemented that yet.")
+                         -- _          -> undefined -- error ("sorry, haven't implemented that yet." ) -- ++ show r)
 
 fromRuby :: Value -> RValue
 fromRuby v = case target of
@@ -89,7 +104,9 @@ fromRuby v = case target of
                RT_BIGNUM -> error "no bignum yet"
                RT_TRUE -> T_TRUE
                RT_FALSE -> T_FALSE
-               RT_NIL   -> T_NIL
+                           -- yes i know this is filthy
+--               RT_ARRAY -> T_ARRAY $ map fromRuby $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
+               -- T_ARRAY [] -- $ unsafePerformIO $ peekArray 0 $ unsafeCoerce v
                _ -> error (show target)
-  where target :: RubyType
-        target = toEnum $ rtype v
+      where target :: RubyType
+            target = toEnum $ rtype v

@@ -14,7 +14,7 @@ newtype RString = RString CString
 newtype RSymbol = RSymbol Word
 
 
-type RubyVal = Ptr ()
+
 
 class Rubyable a where
   toRuby :: a -> RValue

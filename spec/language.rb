@@ -28,14 +28,27 @@ describe "Target" do
   it "can use arrays sensibly" do
     t=Target.new
     t.inline(<<EOF
-mysum (RT_ARRAY r) = sum $ map project r
-  where project (RT_FIXNUM l) = l
-        project _ = error "expected an integer"
+mysum (T_ARRAY r) = T_FIXNUM  $ sum $ map project $ map T_FIXNUM [1..3]
+  where project (T_FIXNUM l) = l
+        project _ = 0 -- error "expected an integer"
 EOF
              )
     t.mysum([1,2,3]).should eql(6)
-    
   end
+
+  
+#   it "returns a haskell list as  an array" do
+#     t=Target.new
+#     t.inline('elts _ = T_ARRAY []')
+#     # (T_FIXNUM i) = T_ARRAY [] -- T_ARRAAY $ map T_FIXNUM $ take i [1..10]
+#     #elts _ = T_ARRAY [T_FIXNUM 7]')
+#     puts "done"
+#     t.elts(5).should eql([1,2,3,4,5])
+#   end
+
+
+
+
   
 #   def be_quick
 #     simple_matcher("a small duration") { |given| given < 1.0 }

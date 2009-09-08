@@ -25,4 +25,6 @@ double num2dbl(VALUE x) {
   return NUM2DBL(x);
 }
 
-
+unsigned int rb_ary_len(VALUE x) {
+  return RARRAY_LEN(x);
+}
