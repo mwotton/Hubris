@@ -23,7 +23,7 @@ end
 Dir['tasks/**/*.rake'].each { |t| load t }
 
 task :spec => "lib/RubyMap.hs"
-task "lib/RubyMap.hs" => "lib/RubyMap.chs" do
+file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
   # mac
   # system "c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
   #linux
