@@ -54,6 +54,15 @@ EOF
     t.elts("A Banana").should eql(nil)
   end
   
+#   it "handles hashes" do
+#     t=Target.new
+#     t.inline(<<EOF
+# use_hash (T_HASH h) = case h ! (T_STRING "
+# EOF
+#              )
+   
+#   end
+  
   def be_quick
     simple_matcher("a small duration") { |given| given < 1.0 }
   end

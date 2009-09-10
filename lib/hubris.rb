@@ -64,26 +64,23 @@ extern void hs_init(int * argc, char ** argv[]);
 
 void Init_#{libName}() {
     int argc = 1;
+    // this needs to be allocated on the heap or we get a segfault
     char ** argv = malloc(sizeof(char**) * 1);
     argv[0]="my_proggy";
-    // fixme why does this crash 
-//    printf("Yay, we've called the init function\\n");
-    hs_init(&argc, &argv); // significant difference between a null pointer and a pointer to a null pointer
-  //  printf("Yay, we've finished calling the init function\\n");
-    // allegedly this works for pre-existing classes as well
+    hs_init(&argc, &argv);
     #{modName} = rb_define_class("#{modName}", rb_cObject);
     EOF
     
     functions.each do |functionName|
       loaderCode += "VALUE #{functionName}_external(VALUE);\n"
-    #  loaderCode += "extern void __stginit_#{functionName}zuexternal(void);\n"
+      # FIXME add the stg roots as well
+      #  loaderCode += "extern void __stginit_#{functionName}zuexternal(void);\n"
     end
 
   
     functions.each do |functionName|
       loaderCode += "rb_define_method(#{modName},\"#{functionName}\",#{functionName}_external, 1);\n"
       # FIXME this is needed for GHC
-      # FIXME this will break for anything with Z in it :)
       # loaderCode += "hs_add_root(__stginit_#{trans_name(functionName + '_external')});\n"
     end
     return loaderCode + "}"
@@ -104,8 +101,6 @@ void Init_#{libName}() {
     
     builders = { "jhc" => lambda { |x,y,z| jhcbuild(x,y,z) },
                  "ghc" => lambda { |x,y,z| ghcbuild(x,y,z) } }
-
-     
  
     signature = Digest::MD5.hexdigest(haskell_str)
     functions = extract_function_names(haskell_str)
@@ -115,9 +110,7 @@ void Init_#{libName}() {
     libName = "lib#{functions[0]}_#{signature}"; # unique signature
     libFile = "#{libName}.so"
     file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
-    if File.exists?(libFile)
-      # puts "Yay, no recompilation"
-    else
+    if not File.exists?(libFile)
       # so the hashing algorithm doesn't collide if we try building the same code
       # with jhc and ghc.
       file.print("-- COMPILED WITH #{builder}\n")
@@ -132,19 +125,21 @@ void Init_#{libName}() {
       build_result = builders[builder].call(libFile, file.path, ['stubs.c','./lib/rshim.c'])
       # File.delete(file.path)    
     end
-    # puts "about to load #{libName}"
     begin
       require libName
-      # puts "loaded #{libName}"
     rescue LoadError
-      raise LoadError,       "loading #{libName} failed, source was\n" + `cat #{file.path}` + "\n" + $!.to_s + "\n" + `nm #{libName}.so |grep ext` + "\n" + (build_result || "no build result?")
+      raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
+                       "\n" + $!.to_s + "\n" + `nm #{libName}.so |grep ext` + "\n" + 
+                       (build_result || "no build result?")
     end
   end
   
   def ghcbuild(libFile, haskell_path, extra_c_src)
+    # this could be even less awful.
     success,msg=noisy("#{GHC} -Wall --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc6.11.#{GHC_VERSION} \
--L/usr/local/lib/ghc-6.11.#{GHC_VERSION} -no-hs-main -optl-Wl,-rpath,/usr/local/lib/ghc-6.11.#{GHC_VERSION} -o #{libFile} " + 
-                      extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I/usr/local/include/ruby-1.9.1/ -I./lib')
+                       -L/usr/local/lib/ghc-6.11.#{GHC_VERSION} -no-hs-main \
+                       -optl-Wl,-rpath,/usr/local/lib/ghc-6.11.#{GHC_VERSION} -o #{libFile} " + 
+                       extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I/usr/local/include/ruby-1.9.1/ -I./lib')
     # puts [success,msg]
     unless success
       raise SyntaxError, "ghc build failed " + msg + `cat #{haskell_path}`
