@@ -85,9 +85,9 @@ big_inc _ = T_NIL
     t.mydouble(1).should eql(2)
     # and it doesn't wipe out other methods on the class
     t.foo.should eql(14)
-   t.inline("dummy _ = T_FIXNUM 1")
-   t.mydouble(1).should eql(2)
-   t.dummy("dummyvar").should eql(1)
+    t.inline("dummy _ = T_FIXNUM 1")
+    t.mydouble(1).should eql(2)
+    t.dummy("dummyvar").should eql(1)
     # FIXME this one is waiting for support of Control.Exception in
     # JHC
     # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
