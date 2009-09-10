@@ -8,9 +8,13 @@ Hubris will wash your car, lie to your boss, and salvage your love life.
 If you are very, very lucky, it might also let you get some uber-fast
 functional goodness into your ruby programs through the back door.
 
+I probably don't have to say this, but patches are very much
+welcome. If you have trouble installing it, tell me, and help me
+improve the docs.
+
 ## Synopsis
 
-UPDATE: so it now works, for fixed length integers, sort of. (What a ringing endorsement, hey?)
+UPDATE: so it now works for fixed length integers, strings and floats.
 
 anyway, as you can see in the spec, you can use it a little like this:
 

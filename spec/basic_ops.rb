@@ -15,6 +15,10 @@ class Target
   end
 end
 
+# Signal.trap("SEGV", 'EXIT');
+            
+         #    ) { exit(1); raise SyntaxError, "eep, everything died" }
+
 describe "Target" do
    it "whines like a little baby when you pass it bad haskell" do
     t = Target.new
@@ -33,19 +37,6 @@ describe "Target" do
   end
 
 
-  it "doubles an int in Haskell-land" do
-    t = Target.new
-    t.inline("mydouble (T_FIXNUM i) = T_FIXNUM (i + i)")
-    t.mydouble(1).should eql(2)
-    # and it doesn't wipe out other methods on the class
-    t.foo.should eql(14)
-   t.inline("dummy _ = T_FIXNUM 1")
-   t.mydouble(1).should eql(2)
-   t.dummy("dummyvar").should eql(1)
-    # FIXME this one is waiting for support of Control.Exception in
-    # JHC
-    # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
-  end
 
   it "handles doubles" do
     t = Target.new
@@ -78,17 +69,32 @@ END
   end
 
 
-#   def be_quick
-#     simple_matcher("a small duration") { |given| given < 1.0 }
-#   end
+  # this one requires multiple lib linking
+  it "doubles an int in Haskell-land" do
+    t = Target.new
+    t.inline("mydouble (T_FIXNUM i) = T_FIXNUM (i + i)")
+    t.mydouble(1).should eql(2)
+    # and it doesn't wipe out other methods on the class
+    t.foo.should eql(14)
+   t.inline("dummy _ = T_FIXNUM 1")
+   t.mydouble(1).should eql(2)
+   t.dummy("dummyvar").should eql(1)
+    # FIXME this one is waiting for support of Control.Exception in
+    # JHC
+    # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
+  end
 
-#   it "caches its output" do
-#     t = Target.new
-#     t.inline("foobar _ = T_STRING \"rar rar rar\"")
-#     before = Time.now
-#     t.inline("foobar _ = T_STRING \"rar rar rar\"")
-#     after = Time.now
-#     (after-before).should be_quick
-#   end
+  def be_quick
+    simple_matcher("a small duration") { |given| given < 1.0 }
+  end
+
+  it "caches its output" do
+    t = Target.new
+    t.inline("foobar _ = T_STRING \"rar rar rar\"")
+    before = Time.now
+    t.inline("foobar _ = T_STRING \"rar rar rar\"")
+    after = Time.now
+    (after-before).should be_quick
+  end
 
 end

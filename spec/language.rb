@@ -20,9 +20,9 @@ describe "Target" do
   
   it "can overwrite old functions" do
     t=Target.new
-    t.inline("reverse (T_STRING s) = T_STRING $ Prelude.reverse s")
-    t.inline("reverse (T_STRING s) = T_STRING $ ('a':Prelude.reverse s)")
-    t.reverse("foot").should eql("atoof")
+    t.inline("myreverse (T_STRING s) = T_STRING $ Prelude.reverse s")
+    t.inline("myreverse (T_STRING s) = T_STRING $ ('a':Prelude.reverse s)")
+    t.myreverse("foot").should eql("atoof")
   end
 
   it "can use arrays sensibly" do

@@ -1,5 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 -- {-# LANGUAGE TypeSynonymInstances #-}
+
 module RubyMap where
 #include "rshim.h"
 #include <ruby.h>
@@ -26,8 +27,9 @@ foreign import ccall unsafe "ruby.h rb_str_new2" rb_str_new2 :: CString -> Value
 -- foreign import ccall unsafe "ruby.h rb_ary_new2" rb_ary_new2 :: CLong -> IO Value
 --foreign import ccall unsafe "ruby.h rb_ary_push" rb_ary_push :: Value -> Value -> IO ()
 --foreign import ccall unsafe "ruby.h rb_ary_store" rb_ary_store :: Value -> Int -> Value -> IO ()
---foreign import ccall unsafe "ruby.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
---foreign import ccall unsafe "rshim.h rb_ary_len" rb_ary_len :: Value -> CUInt
+-- this line crashes jhc
+-- foreign import ccall unsafe "intern.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
+foreign import ccall unsafe "rshim.h rb_ary_len" rb_ary_len :: Value -> CUInt
 foreign import ccall unsafe "ruby.h rb_float_new" rb_float_new :: Double -> Value
 
 -- we're being a bit filthy here - the interface is all macros, so we're digging in to find what it actually is
@@ -105,7 +107,7 @@ fromRuby v = case target of
                RT_TRUE -> T_TRUE
                RT_FALSE -> T_FALSE
                            -- yes i know this is filthy
---               RT_ARRAY -> T_ARRAY $ map fromRuby $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
+               --  RT_ARRAY -> T_ARRAY $ map fromRuby $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
                -- T_ARRAY [] -- $ unsafePerformIO $ peekArray 0 $ unsafeCoerce v
                _ -> error (show target)
       where target :: RubyType

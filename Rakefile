@@ -22,7 +22,7 @@ end
 #require 'newgem/tasks'
 Dir['tasks/**/*.rake'].each { |t| load t }
 
-task :spec => "lib/RubyMap.hs"
+
 file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
   # mac
   # system "c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
@@ -31,10 +31,24 @@ file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
   system "c2hs -v --cppopts='-I/usr/local/include/ruby-1.9.1' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
 end
 
+require 'spec'
+require 'spec/rake/spectask'
+
+# desc "Run the specs under spec/"
+# all_examples = Spec::Rake::SpecTask.new do |t|
+#   t.spec_opts = ['--options', "spec/spec.opts"]
+#   t.spec_files = FileList['spec/*.rb']
+# end
+
+task :spec => ["lib/RubyMap.hs"]
+
 task :clean do
   FileList['lib/*.hi', 'lib/*.ho', 'lib/RubyMap.chs.h', 'lib/RubyMap.chi','lib/RubyMap.hs', 
-           'hs.out', 'lib/*.o', 'libfoo_*.bundle', 'lib/hs.out_code.c' ].each do |f|
-    system "rm #{f}"
+           'hs.out', 'stubs.c.*', 'hs.out_code*', 'rshim.c*', 'lib*.so', 'lib/*.o', 'libfoo_*.bundle', 'lib/hs.out_code.c' ].each do |f|
+    begin
+        File.delete(f)
+    rescue
+    end
   end
   system "cd sample; make clean"
 
