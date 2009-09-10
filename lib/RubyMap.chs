@@ -24,11 +24,11 @@ import Foreign.Marshal.Array
 type Value = CULong -- FIXME, we'd prefer to import the type VALUE directly
 foreign import ccall unsafe "ruby.h rb_str2cstr" rb_str2cstr :: Value -> CInt -> CString
 foreign import ccall unsafe "ruby.h rb_str_new2" rb_str_new2 :: CString -> Value
--- foreign import ccall unsafe "ruby.h rb_ary_new2" rb_ary_new2 :: CLong -> IO Value
---foreign import ccall unsafe "ruby.h rb_ary_push" rb_ary_push :: Value -> Value -> IO ()
+foreign import ccall unsafe "ruby.h rb_ary_new2" rb_ary_new2 :: CLong -> IO Value
+foreign import ccall unsafe "ruby.h rb_ary_push" rb_ary_push :: Value -> Value -> IO ()
 --foreign import ccall unsafe "ruby.h rb_ary_store" rb_ary_store :: Value -> Int -> Value -> IO ()
 -- this line crashes jhc
--- foreign import ccall unsafe "intern.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
+foreign import ccall unsafe "intern.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
 foreign import ccall unsafe "rshim.h rb_ary_len" rb_ary_len :: Value -> CUInt
 foreign import ccall unsafe "ruby.h rb_float_new" rb_float_new :: Double -> Value
 
@@ -90,10 +90,11 @@ toRuby r = case r of
            T_TRUE  ->  fromIntegral $ fromEnum RUBY_Qtrue
            T_FALSE ->  fromIntegral $ fromEnum RUBY_Qfalse
            T_NIL   ->  fromIntegral $ fromEnum RUBY_Qnil
---            T_ARRAY l -> unsafePerformIO $ do
---                           ary <- rb_ary_new2 $ fromIntegral $ length l
---                           mapM_ (rb_ary_push ary . toRuby) l
---                           return undefined -- ary
+           T_ARRAY l -> unsafePerformIO $ do
+                           ary <- rb_ary_new2 $ fromIntegral $ length l
+                           mapM_ (rb_ary_push ary . toRuby) l
+                           return ary
+                           -- return undefined -- ary
            T_BIGNUM _ -> error "No implementation for Bignums yet"
                          -- _          -> undefined -- error ("sorry, haven't implemented that yet." ) -- ++ show r)
 
@@ -107,8 +108,8 @@ fromRuby v = case target of
                RT_TRUE -> T_TRUE
                RT_FALSE -> T_FALSE
                            -- yes i know this is filthy
-               --  RT_ARRAY -> T_ARRAY $ map fromRuby $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
-               -- T_ARRAY [] -- $ unsafePerformIO $ peekArray 0 $ unsafeCoerce v
+               RT_ARRAY -> T_ARRAY $ map fromRuby $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
+
                _ -> error (show target)
       where target :: RubyType
             target = toEnum $ rtype v

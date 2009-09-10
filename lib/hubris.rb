@@ -112,11 +112,10 @@ void Init_#{libName}() {
     unless functions.size > 0
       return
     end
-    `rm lib*.so`
     libName = "lib#{functions[0]}_#{signature}"; # unique signature
     libFile = "#{libName}.so"
     file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
-    if false # File.exists?(libFile)
+    if File.exists?(libFile)
       # puts "Yay, no recompilation"
     else
       # so the hashing algorithm doesn't collide if we try building the same code
