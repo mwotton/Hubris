@@ -113,6 +113,10 @@ void Init_#{libName}() {
     if not File.exists?(libFile)
       # so the hashing algorithm doesn't collide if we try building the same code
       # with jhc and ghc.
+      #
+      # argh, this isn't quite right. If we inline the same code but on a new ruby module
+      # this won't create the new stubs. We want to be able to use new stubs but with the
+      # old haskell lib. FIXME
       file.print("-- COMPILED WITH #{builder}\n")
       file.print(make_haskell_bindings(functions))
       file.print(haskell_str)

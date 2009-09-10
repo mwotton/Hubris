@@ -3,7 +3,10 @@ require File.dirname(__FILE__) + '/spec_helper.rb'
 class Target
   include Hubris
 end
-  
+
+class Target2
+  include Hubris
+end
 
 describe "Target" do
 
@@ -67,6 +70,18 @@ EOF
   def be_quick
     simple_matcher("a small duration") { |given| given < 1.0 }
   end
+  
+  it "can insert the same code into two ruby modules" do
+    t=Target.new
+    u=Target2.new
+    t.inline("foobar _ = T_STRING \"rar rar rar\"")
+    u.inline("foobar _ = T_STRING \"rar rar rar\"")
+    t.foobar(nil).should eql("rar rar rar")
+    u.foobar(nil).should eql("rar rar rar")
+    puts t.foobar(nil)
+    puts u.foobar(nil)
+  end
+ 
   
   it "caches its output" do
     t=Target.new
