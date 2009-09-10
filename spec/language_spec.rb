@@ -23,6 +23,7 @@ describe "Target" do
   #  throw an exception when overwriting is attempted
   #  print a warning
   #  silently ignore the attempt (current behaviour)
+  #  (actually, sometimes you get the old one, sometimes you get the new one. SPOOKY.
   #  ... ?
   it "can overwrite old functions" do
     t=Target.new
@@ -69,9 +70,10 @@ EOF
   
   it "caches its output" do
     t=Target.new
+    u=Target.new
     t.inline("foobar _ = T_STRING \"rar rar rar\"")
     before = Time.now
-    t.inline("foobar _ = T_STRING \"rar rar rar\"")
+    u.inline("foobar _ = T_STRING \"rar rar rar\"")
     after = Time.now
     (after-before).should be_quick
   end
