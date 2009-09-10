@@ -18,6 +18,7 @@ describe "Target" do
     end
   end
   
+  # this appears not to work with GHC right now.
   it "can overwrite old functions" do
     t=Target.new
     t.inline("myreverse (T_STRING s) = T_STRING $ Prelude.reverse s")
@@ -64,5 +65,7 @@ EOF
     after = Time.now
     (after-before).should be_quick
   end
+  
+  
   
 end

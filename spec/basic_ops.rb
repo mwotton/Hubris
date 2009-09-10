@@ -37,24 +37,26 @@ describe "Target" do
   end
 
 
+  it "handles booleans" do
+    t = Target.new
+    t.inline(<<END
+my_negate T_FALSE = T_TRUE
+my_negate T_NIL = T_TRUE
+my_negate _ = T_FALSE 
+END
+            )
+    t.my_negate(false).should eql(true)
+    t.my_negate(true).should eql(false)
+    t.my_negate("Banana").should eql(false)
+  end
 
+  
   it "handles doubles" do
     t = Target.new
     t.inline("triple (T_FLOAT a) = T_FLOAT (a*3.0)")
     t.triple(3.4).should eql(10.2)
   end
 
-  it "handles booleans" do
-    t = Target.new
-    t.inline(<<END
-my_negate T_TRUE = T_FALSE
-my_negate T_FALSE = T_TRUE
-my_negate _ = error "argh, something went wrong"
-END
-             )
-    t.my_negate(false).should eql(true)
-    t.my_negate(true).should eql(false)
-  end
 
   it "handles nils too" do
     t = Target.new
@@ -68,7 +70,14 @@ END
     t.my_reverse("foot").should eql("toof")
   end
 
-
+  it "handles BigInts" do
+    t=Target.new
+    t.inline("big_inc (T_BIGNUM i) = T_BIGNUM $ i + 1
+big_inc _ = T_NIL
+")
+    t.big_inc(10000000000000000).should eql(10000000000000001)
+  end
+  
   # this one requires multiple lib linking
   it "doubles an int in Haskell-land" do
     t = Target.new
@@ -82,19 +91,6 @@ END
     # FIXME this one is waiting for support of Control.Exception in
     # JHC
     # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
-  end
-
-  def be_quick
-    simple_matcher("a small duration") { |given| given < 1.0 }
-  end
-
-  it "caches its output" do
-    t = Target.new
-    t.inline("foobar _ = T_STRING \"rar rar rar\"")
-    before = Time.now
-    t.inline("foobar _ = T_STRING \"rar rar rar\"")
-    after = Time.now
-    (after-before).should be_quick
   end
 
 end

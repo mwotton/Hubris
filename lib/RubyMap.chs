@@ -31,6 +31,8 @@ foreign import ccall unsafe "ruby.h rb_ary_push" rb_ary_push :: Value -> Value -
 foreign import ccall unsafe "intern.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
 foreign import ccall unsafe "rshim.h rb_ary_len" rb_ary_len :: Value -> CUInt
 foreign import ccall unsafe "ruby.h rb_float_new" rb_float_new :: Double -> Value
+foreign import ccall unsafe "ruby.h rb_big2str"   rb_big2str :: Value -> Int -> Value
+foreign import ccall unsafe "ruby.h rb_str_to_inum"   rb_str_to_inum :: Value -> Int -> Int -> Value
 
 -- we're being a bit filthy here - the interface is all macros, so we're digging in to find what it actually is
 foreign import ccall unsafe "rshim.h rtype" rtype :: Value -> Int
@@ -95,7 +97,7 @@ toRuby r = case r of
                            mapM_ (rb_ary_push ary . toRuby) l
                            return ary
                            -- return undefined -- ary
-           T_BIGNUM _ -> error "No implementation for Bignums yet"
+           T_BIGNUM b -> rb_str_to_inum (rb_str_new2 $ unsafePerformIO $ newCAString $ show b) 10 1
                          -- _          -> undefined -- error ("sorry, haven't implemented that yet." ) -- ++ show r)
 
 fromRuby :: Value -> RValue
@@ -104,7 +106,7 @@ fromRuby v = case target of
                RT_FIXNUM -> T_FIXNUM $ fix2int v
                RT_STRING -> T_STRING $ unsafePerformIO $ peekCString $ rb_str2cstr v 0
                RT_FLOAT ->  T_FLOAT $ num2dbl v
-               RT_BIGNUM -> error "no bignum yet"
+               RT_BIGNUM -> T_BIGNUM $ read  $ unsafePerformIO $ peekCString $ rb_str2cstr (rb_big2str v 10) 0
                RT_TRUE -> T_TRUE
                RT_FALSE -> T_FALSE
                            -- yes i know this is filthy
