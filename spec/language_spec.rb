@@ -12,7 +12,7 @@ describe "Target" do
 
   it "can be called in a block" do
     t=Target.new
-    t.inline("foo (T_FIXNUM i) = T_FIXNUM (-i)")
+    t.inline("foo (T_FIXNUM i) = T_FIXNUM (-i)", { :no_strict => true })
     (1..2).each do |x|
       t.foo(x).should eql(0-x)
     end
@@ -30,19 +30,18 @@ describe "Target" do
   #  ... ?
   it "can overwrite old functions" do
     t=Target.new
-    t.inline("myreverse (T_STRING s) = T_STRING $ Prelude.reverse s")
-    t.inline("myreverse (T_STRING s) = T_STRING $ ('a':Prelude.reverse s)")
+    t.inline("myreverse (T_STRING s) = T_STRING $ Prelude.reverse s", {:no_strict => true })
+    t.inline("myreverse (T_STRING s) = T_STRING $ ('a':Prelude.reverse s)", { :no_strict => true })
     t.myreverse("foot").should eql("atoof")
   end
 
   it "can use arrays sensibly" do
     t=Target.new
-    t.inline(<<EOF
-mysum (T_ARRAY r) = T_FIXNUM  $ sum $ map project r 
+    t.inline(
+"mysum (T_ARRAY r) = T_FIXNUM  $ sum $ map project r 
   where project (T_FIXNUM l) = l
-        project _ = 0
-EOF
-             )
+        project _ = 0" , {:no_strict => true })
+      
     t.mysum([1,2,3,4]).should eql(10)
   end
 
@@ -84,9 +83,10 @@ EOF
  
   it "throws an exception on partial match" do
     t=Target.new
-    t.inline("foo T_NIL = T_TRUE")
-    lambda{ t.foo(1) }.should raise_error(HaskellError)
+    t.inline("foo2 T_NIL = T_TRUE", { :no_strict => true })
+    lambda{ t.foo2(1) }.should raise_error(HaskellError)
   end
+  
   it "caches its output" do
     t=Target.new
     u=Target.new
@@ -95,6 +95,11 @@ EOF
     u.inline("foobar _ = T_STRING \"rar rar rar\"")
     after = Time.now
     (after-before).should be_quick
+  end
+
+  it "catches incomplete code unless you turn no_strict on" do
+    t=Target.new
+    lambda { t.inline("incomplete T_NIL = T_TRUE") }.should raise_error(HaskellError)
   end
   
 end

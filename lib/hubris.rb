@@ -89,10 +89,10 @@ void Init_#{libName}() {
       # FIXME this is needed for GHC
       # loaderCode += "hs_add_root(__stginit_#{trans_name(functionName + '_external')});\n"
     end
-    return loaderCode + "}"
+    return loaderCode + "}\n"
   end
   
-  def inline(haskell_str)
+  def inline(haskell_str, build_options={ })
     builder = "ghc"
     # this is a bit crap. You wouldn't have to specify the args in an FP language :/
     # should probably switch out to a couple of single-method classes
@@ -105,8 +105,8 @@ void Init_#{libName}() {
     # """
     # this is a solved problem, guys. come ON. FIXME
     
-    builders = { "jhc" => lambda { |x,y,z| jhcbuild(x,y,z) },
-                 "ghc" => lambda { |x,y,z| ghcbuild(x,y,z) } }
+    builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) },
+                 "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
  
     signature = Digest::MD5.hexdigest(haskell_str)
     functions = extract_function_names(haskell_str)
@@ -132,7 +132,7 @@ void Init_#{libName}() {
       File.open("stubs.c", "w") {|io| io.write(make_stub(modName,libName, functions))}
       # and it all comes together
       
-      build_result = builders[builder].call(libFile, file.path, ['stubs.c','./lib/rshim.c'])
+      build_result = builders[builder].call(libFile, file.path, ['stubs.c','./lib/rshim.c'], build_options)
       # File.delete(file.path)    
     end
     begin
@@ -144,15 +144,20 @@ void Init_#{libName}() {
     end
   end
   
-  def ghcbuild(libFile, haskell_path, extra_c_src)
+  def ghcbuild(libFile, haskell_path, extra_c_src, options)
     # this could be even less awful.
-    success,msg=noisy("#{GHC} -Wall  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc6.11.#{GHC_VERSION} \
-                       -L/usr/local/lib/ghc-6.11.#{GHC_VERSION} -no-hs-main \
-                       -optl-Wl,-rpath,/usr/local/lib/ghc-6.11.#{GHC_VERSION} -o #{libFile} " + 
-                       extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I/usr/local/include/ruby-1.9.1/ -I./lib')
+
+    command = "#{GHC} -Wall  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc6.11.#{GHC_VERSION} \
+    -L/usr/local/lib/ghc-6.11.#{GHC_VERSION} -no-hs-main \
+    -optl-Wl,-rpath,/usr/local/lib/ghc-6.11.#{GHC_VERSION} -o #{libFile} " + 
+    extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I/usr/local/include/ruby-1.9.1/ -I./lib'
+    if (not options[:no_strict])
+      command += ' -Werror ' # bondage and discipline
+    end
+    success,msg=noisy(command)
     # puts [success,msg]
     unless success
-      raise SyntaxError, "ghc build failed " + msg + `cat #{haskell_path}`
+      raise HaskellError, "ghc build failed " + msg + `cat #{haskell_path}`
     end
     return msg
   end
@@ -162,7 +167,7 @@ void Init_#{libName}() {
     # puts "building\n#{file.read}"
     success, msg = noisy("jhc  -dc #{haskell_path} -papplicative -ilib")
     unless success || File.exists?("hs.out_code.c")
-      raise SyntaxError, "JHC build failed:\nsource\n" + `cat #{haskell_path}` + "\n#{msg}"
+      raise HaskellError, "JHC build failed:\nsource\n" + `cat #{haskell_path}` + "\n#{msg}"
     end
     # puts msg
    

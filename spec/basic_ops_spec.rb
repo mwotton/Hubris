@@ -22,7 +22,7 @@ Signal.trap("INT", 'EXIT');
 describe "Target" do
    it "whines like a little baby when you pass it bad haskell" do
     t = Target.new
-    lambda{ t.inline("broken _ = (1 + \"a string\")")}.should raise_error(SyntaxError)
+    lambda{ t.inline("broken _ = (1 + \"a string\")")}.should raise_error(HaskellError)
   end
 
   it "ignores a comment" do
@@ -33,7 +33,7 @@ describe "Target" do
 
   it "sings like a golden bird when you treat it right, aw yeah" do
     t = Target.new
-    lambda { t.inline("working _ = T_FIXNUM (1+2)") }.should_not raise_error
+    lambda { t.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
   end
 
 
@@ -53,20 +53,20 @@ END
   
   it "handles doubles" do
     t = Target.new
-    t.inline("triple (T_FLOAT a) = T_FLOAT (a*3.0)")
+    t.inline("triple (T_FLOAT a) = T_FLOAT (a*3.0)", { :no_strict => true})
     t.triple(3.4).should eql(10.2)
   end
 
 
   it "handles nils too" do
     t = Target.new
-    t.inline("give_me_a_nil _ = T_NIL")
+    t.inline("give_me_a_nil _ = T_NIL", { :no_strict => true})
     t.give_me_a_nil(1).should eql(nil)
   end
 
   it "handles strings" do
     t = Target.new
-    t.inline("my_reverse (T_STRING s) = T_STRING $ Prelude.reverse s")
+    t.inline("my_reverse (T_STRING s) = T_STRING $ Prelude.reverse s",{ :no_strict => true } )
     t.my_reverse("foot").should eql("toof")
   end
 
@@ -81,11 +81,11 @@ big_inc _ = T_NIL
   # this one requires multiple lib linking
   it "doubles an int in Haskell-land" do
     t = Target.new
-    t.inline("mydouble (T_FIXNUM i) = T_FIXNUM (i + i)")
+    t.inline("mydouble (T_FIXNUM i) = T_FIXNUM (i + i)", { :no_strict => true } )
     t.mydouble(1).should eql(2)
     # and it doesn't wipe out other methods on the class
     t.foo.should eql(14)
-    t.inline("dummy _ = T_FIXNUM 1")
+    t.inline("dummy _ = T_FIXNUM 1", { :no_strict => true })
     t.mydouble(1).should eql(2)
     t.dummy("dummyvar").should eql(1)
     # FIXME this one is waiting for support of Control.Exception in
