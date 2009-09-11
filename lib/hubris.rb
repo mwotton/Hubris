@@ -13,8 +13,8 @@ module Hubris
 
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
-    # function types.
-    # tricky bit: generating interface for each
+  # function types.
+  # tricky bit: generating interface for each
   def extract_function_names(haskell_str)
     functions = {}
     haskell_str.each_line do |line|

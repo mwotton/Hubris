@@ -18,8 +18,6 @@ unsigned int rb_ary_len(VALUE x);
 /* }; */
 
 
-
-
 // argh, and again
 enum RubyType {
  RT_NONE     = T_NONE,
