@@ -26,8 +26,10 @@ anyway, as you can see in the spec, you can use it a little like this:
     end
 
     t = Target.new
-    t.inline "mydouble (T_FIXNUM i) = T_FIXNUM (i + i)"
-    t.inline "mytriple (T_FIXNUM i) = T_FIXNUM (i * 3)"
+    t.inline "mydouble (T_FIXNUM i) = T_FIXNUM (i + i)
+    my_double _ = T_NIL"
+    t.inline "mytriple (T_FIXNUM i) = T_FIXNUM (i * 3)
+    mytriple _ = T_NIL"
     puts t.negate(3)
     puts t.mydouble(i)
     puts t.mytriple(i)
