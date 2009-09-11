@@ -15,7 +15,7 @@ class Target
   end
 end
 
-# Signal.trap("SEGV", 'EXIT');
+Signal.trap("INT", 'EXIT');
             
          #    ) { exit(1); raise SyntaxError, "eep, everything died" }
 
@@ -90,6 +90,7 @@ big_inc _ = T_NIL
     t.dummy("dummyvar").should eql(1)
     # FIXME this one is waiting for support of Control.Exception in
     # JHC
+    lambda { t.mydouble(2.3)}.should raise_error(HaskellError)
     # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
   end
 

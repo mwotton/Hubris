@@ -5,16 +5,16 @@ module RubyMap where
 #include "rshim.h"
 #include <ruby.h>
 
-import Control.Applicative
-import Control.Monad
+-- import Control.Applicative
+-- import Control.Monad
 import Data.Word
-import Foreign.Ptr
+-- import Foreign.Ptr
 import Foreign.C.Types	
 import Foreign.C.String
-import Foreign.Storable
+-- import Foreign.Storable
 import System.IO.Unsafe (unsafePerformIO)
 
-import Foreign.Marshal.Array
+-- import Foreign.Marshal.Array
 
 {# context lib="rshim" #}
 {# enum RubyType {} deriving (Eq, Show) #} -- maybe Ord?
@@ -38,6 +38,12 @@ foreign import ccall unsafe "rshim.h num2dbl"    num2dbl    :: Value -> Double  
 
 -- this line crashes jhc
 foreign import ccall unsafe "intern.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
+
+foreign import ccall safe "ruby.h rb_raise" rb_raise :: Value -> CString -> IO ()
+foreign import ccall unsafe "ruby.h rb_eval_string" rb_eval_string :: CString -> Value
+
+
+
 
 data RValue = T_NIL  
             | T_FLOAT Double
@@ -100,3 +106,11 @@ fromRuby v = case target of
                _ -> error (show target)
       where target :: RubyType
             target = toEnum $ rtype v
+
+-- utility stuff
+
+throwException :: String -> IO Value
+throwException s = do he <- newCAString "HaskellError"
+                      err <- newCAString s
+                      rb_raise (rb_eval_string he) err
+                      error "shouldn't ever get here"

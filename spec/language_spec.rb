@@ -82,7 +82,11 @@ EOF
     puts u.foobar(nil)
   end
  
-  
+  it "throws an exception on partial match" do
+    t=Target.new
+    t.inline("foo T_NIL = T_TRUE")
+    lambda{ t.foo(1) }.should raise_error(HaskellError)
+  end
   it "caches its output" do
     t=Target.new
     u=Target.new

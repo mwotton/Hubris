@@ -4,6 +4,8 @@ require 'open4'
 require 'digest/md5'
 # TODO delete old files
 
+class HaskellError < RuntimeError
+end
 module Hubris
   VERSION = '0.0.2'
   GHC_VERSION='20090903'
@@ -26,22 +28,26 @@ module Hubris
   
   def make_haskell_bindings(functions)
     prelude =<<-EOF
-{-# LANGUAGE FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
-import Foreign.Ptr()
+{-# LANGUAGE ScopedTypeVariables, FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
+-- import Foreign.Ptr()
 import RubyMap
-import Control.Exception()
-
+import Prelude hiding (catch)
+import Control.Exception(SomeException, evaluate, catch)
+import Foreign(unsafePerformIO)
 main :: IO ()
 main = return ()
+
 EOF
     bindings = ""
     # cheap way: assert type sigs binding to RValue. Might be able to do better after,
     # but this'll do for the moment
     functions.each do |fname|
-      bindings +=<<-"EOF"
+      bindings +=<<-EOF
 #{fname} :: RValue -> RValue
 #{fname}_external :: Value -> Value -> Value
-#{fname}_external _mod x = toRuby $ #{fname} $ fromRuby x
+#{fname}_external _mod x = unsafePerformIO $
+  (evaluate (toRuby $ #{fname} $ fromRuby x))
+     `catch` (\\y -> throwException (show (y::SomeException)))
 foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value -> Value
 
       EOF
@@ -66,7 +72,7 @@ void Init_#{libName}() {
     int argc = 1;
     // this needs to be allocated on the heap or we get a segfault
     char ** argv = malloc(sizeof(char**) * 1);
-    argv[0]="my_proggy";
+    argv[0]="haskell_extension";
     hs_init(&argc, &argv);
     #{modName} = rb_define_class("#{modName}", rb_cObject);
     EOF
@@ -140,7 +146,7 @@ void Init_#{libName}() {
   
   def ghcbuild(libFile, haskell_path, extra_c_src)
     # this could be even less awful.
-    success,msg=noisy("#{GHC} -Wall --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc6.11.#{GHC_VERSION} \
+    success,msg=noisy("#{GHC} -Wall  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc6.11.#{GHC_VERSION} \
                        -L/usr/local/lib/ghc-6.11.#{GHC_VERSION} -no-hs-main \
                        -optl-Wl,-rpath,/usr/local/lib/ghc-6.11.#{GHC_VERSION} -o #{libFile} " + 
                        extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I/usr/local/include/ruby-1.9.1/ -I./lib')
