@@ -17,9 +17,20 @@ import System.IO.Unsafe (unsafePerformIO)
 -- import Foreign.Marshal.Array
 
 {# context lib="rshim" #}
-{# enum RubyType {} deriving (Eq, Show) #} -- maybe Ord?
-{# enum ruby_special_consts as RubyConsts {} deriving (Eq,Show) #}
 
+{# enum RubyType {} deriving (Eq, Show) #} -- maybe Ord?
+
+#if RUBY_VERSION_CODE >= 187
+#c
+enum ruby_special_consts { 
+  RUBY_Qfalse = 0,
+  RUBY_Qtrue = 2,
+  RUBY_Qnil = 4,
+  RUBY_Qundef = 6
+};
+#endc
+#endif
+{# enum ruby_special_consts as RubyConsts {} deriving (Eq,Show) #}
 type Value = CULong -- FIXME, we'd prefer to import the type VALUE directly
 foreign import ccall unsafe "ruby.h rb_str2cstr"    rb_str2cstr    :: Value -> CInt -> CString
 foreign import ccall unsafe "ruby.h rb_str_new2"    rb_str_new2    :: CString -> Value
