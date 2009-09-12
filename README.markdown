@@ -56,6 +56,8 @@ to do.
 
  
     sudo gem install rake open4 rspec
+    # get c2hs
+    cabal install c2hs
     wget http://www.haskell.org/ghc/dist/current/dist/ghc-6.11.20090907-src.tar.bz2
     tar -jxvf ghc-6.11.20090907-src.tar.bz2
     cd ghc-6.11.20090907
