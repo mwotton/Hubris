@@ -13,7 +13,7 @@ module Hubris
   # more grungy shell hacking to find an appropriate GHC
   # arguably should be done at install...
   ghc_cmd =<<'EOF'
-find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'
+find $(echo $PATH | sed -e 's/:/ /g') -perm /111 -regex '.*/ghc\(\-[0-9\.]*\)'
 EOF
   res = `#{ghc_cmd}`
   #puts res
