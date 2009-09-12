@@ -10,7 +10,7 @@ require File.dirname(__FILE__) + '/spec_helper.rb'
 
 class Target
   include Hubris
-  def foo
+  def foo_local
     14
   end
 end
@@ -84,7 +84,7 @@ big_inc _ = T_NIL
     t.inline("mydouble (T_FIXNUM i) = T_FIXNUM (i + i)", { :no_strict => true } )
     t.mydouble(1).should eql(2)
     # and it doesn't wipe out other methods on the class
-    t.foo.should eql(14)
+    t.foo_local.should eql(14)
     t.inline("dummy _ = T_FIXNUM 1", { :no_strict => true })
     t.mydouble(1).should eql(2)
     t.dummy("dummyvar").should eql(1)
