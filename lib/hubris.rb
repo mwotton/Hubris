@@ -9,10 +9,9 @@ end
 
 module Hubris
   VERSION = '0.0.2'
-  GHC_VERSION='20090903'
-  GHC ='ghc-6.11.' + GHC_VERSION 
 
   # more grungy shell hacking to find an appropriate GHC
+  # arguably should be done at install...
   ghc_cmd =<<'EOF'
 find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'
 EOF
@@ -43,7 +42,6 @@ EOF
   create_makefile("DummyExtension")
   RubyHeader = `grep '^topdir' Makefile | sed 's/^.*= *//'`.strip
   File.delete("Makefile")
-  puts "header is " + RubyHeader
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
   # function types.
