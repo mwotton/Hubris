@@ -1,0 +1,6 @@
+.jhci-hist
+# stupid emacs lock files
+.#*
+# jhc stuff
+hs.out_code.c
+hs.out

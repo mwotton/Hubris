@@ -1,0 +1,176 @@
+% Local Variables:
+% compile-command: "/opt/local/bin/pdflatex fp-syd.tex && open fp-syd.pdf"
+% End:
+
+\documentclass{beamer}
+\usepackage{listings}
+\usepackage{beamerthemesplit}
+
+\title{Hubris}
+\subtitle{subjecting Haskell to Ruby's iron will}
+\author{Mark Wotton \textless mwotton@shimweasel.com\textgreater}
+\date{\today}
+
+\begin{document}
+\lstset{language=Haskell}
+\section{Two cultures}
+\frame{\titlepage}
+
+% \subsection
+\begin{frame}
+  \frametitle{I \ding{170} Ruby}
+  \begin{itemize}
+  \item concise and flexible
+  \item Big web community, many libraries
+  \item Fun
+  \end{itemize}
+\end{frame}
+
+
+
+\begin{frame} 
+  \frametitle{I \ding{170} Haskell}
+  \begin{itemize}
+  \item<1-> Fast (optimised native code, multicore, etc)
+  \item<2-> Expressive - type systems don't have to suck.
+  \item<3-> Provably safe at compile time
+  \end{itemize}
+\end{frame}
+
+
+\subsection{lies, damn lies, benchmarks}
+\begin{frame}
+  \frametitle{the slide that's going to get me lynched}
+  \center{JRuby vs GHC}
+  \begin{tabular}{l l l l} 
+    Program &	        Time	&Memory &	Source Size\\ \hline
+    reverse-complement	&5	&1	&1/4\\
+    regex-dna	        &7	&3	&1/5\\	
+    binary-trees	        &8	&7	&1	\\	
+    k-nucleotide	        &10	&1	&1/7	\\	
+    pidigits	        &18	&18	&2	\\	
+    n-body	        &26	&53	&1	\\	
+    chameneos-redux	&30	&24	&1	\\	
+    fasta	                &31	&142	&1	\\	
+    fannkuch	        &45	&22	&1/4	\\	
+    spectral-norm	        &227	&56	&1/3	\\	
+    mandelbrot	        &319	&3	&1/2\\	
+  \end{tabular}
+\end{frame}
+
+\begin{frame}
+  \frametitle{319 times? Really?}
+  \begin{itemize}
+  \item<1-> Haskell code written by expert hackers
+  \item<2-> Longer in some cases - gone hard on optimisations
+    even when they blow out source code size. But...
+  \item <3-> 319 times faster, 1/3 the memory.
+  \end{itemize}
+\end{frame}
+
+\subsection{problems with Haskell}
+\begin{frame}
+\frametitle{more lies to outrage Myles}
+\setlength\parskip{0.1in}
+there are approximately twelve programmers in the world who know Haskell
+
+Nine are working on four different compilers with extensions for
+solving logic puzzles in the type system (not kidding, google
+``haskell instant insanity'')
+
+The other three are working on six different web frameworks
+\end{frame}
+
+\section{Hubris}
+\begin{frame}
+\frametitle{Peanut butter, meet chocolate}
+Ruby has a heap of web frameworks, convenience libraries, well-tested
+integration with javascript + CSS
+\setlength\parskip{0.25in}
+
+Haskell is smoking fast with rock solid type safety but a tiny
+community
+
+Hubris is my bridge between the two
+\end{frame}
+
+\subsection{Haskell example}
+\begin{frame}[fragile]
+  \frametitle{lazy, statically typed, and pure}
+  \begin{lstlisting}
+clMax lim = maximumBy (comparing snd) (assocs arr)
+  where arr = listArray (1,lim) 
+                       (0:(map depth [2..]))
+        step x = if even x 
+                   then div x 2 
+                   else 3 * x + 1
+        depth x = 1 + if n <= lim 
+                        then arr ! n 
+                        else depth n
+          where n = step x    
+  \end{lstlisting}
+\end{frame}
+
+
+\subsection{wrap it in Ruby}
+\begin{frame}[fragile]
+  \frametitle{actually using it}
+  \lstset{language=Ruby}
+  \begin{lstlisting}
+    require Hubris           # my favourite line
+    c = Collatz.new          # any ruby object
+    c.inline(haskell_string) # from above
+    puts c.clMax(1000000)
+    >> 837799
+  \end{lstlisting}
+\end{frame}
+
+% \frametitle{Predictive}
+\section{TODO, gotchas, FIXME}
+\begin{frame}
+\setlength\parskip{0.1in}
+\frametitle{Making it less sucky}
+Needs to use jhc, because ghc can't produce dynamic libs right now
+(works with GHC HEAD, will be compatible with 6.12)
+
+one-way bridge, no callbacks to Ruby
+
+a smarter mapping layer
+
+caching of Haskell binaries
+
+cleanup of ruby interface
+
+shore up support for arrays, hashes, BigInts
+
+autoconf support to find ruby libs and includes
+
+... lots to do
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Try it out!}
+  install GHC and JHC
+
+  git clone git://github.com/mwotton/Hubris.git
+
+  follow the README
+
+  tell me what's missing
+
+  patches very much welcome (thanks to Josh Price, James Britt and Tatsuhiro Ujihisa)
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Learning Haskell}
+  Learn You A Haskell: why the lucky stiff's academic cousin
+
+  Real World Haskell: awesome, practical introduction
+
+  haskell channel on freenode
+
+  beginners@haskell.org
+\end{frame}
+\end{document}
