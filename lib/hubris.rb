@@ -9,7 +9,10 @@ end
 
 module Hubris
   VERSION = '0.0.2'
+  SO_CACHE = "~/.hubris_cache"
 
+  system('mkdir ' + SO_CACHE)
+  $:.push(SO_CACHE)
   # more grungy shell hacking to find an appropriate GHC
   # arguably should be done at install...
   ghc_cmd =<<'EOF'
@@ -145,7 +148,7 @@ void Init_#{libName}() {
       return
     end
     libName = "lib#{functions[0]}_#{signature}"; # unique signature
-    libFile = "#{libName}.so"
+    libFile = SO_CACHE + "/#{libName}.so"
     file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
     if not File.exists?(libFile)
       # so the hashing algorithm doesn't collide if we try building the same code
