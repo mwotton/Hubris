@@ -58,7 +58,10 @@ to do.
     sudo gem install rake open4 rspec
     # get c2hs
     cabal install c2hs
-    wget http://www.haskell.org/ghc/dist/current/dist/ghc-6.11.20090907-src.tar.bz2
+    wget    http://www.haskell.org/ghc/dist/current/dist/ghc-6.11.20090907-src.tar.bz2
+    # WARNING this tarball does not currently work. You'll need to
+    # pull the latest code from the darcs GHC repo. I'll update this
+    # when a new source tarball that works is up.
     tar -jxvf ghc-6.11.20090907-src.tar.bz2
     cd ghc-6.11.20090907
     # adjust the argument to -j to your number of cores, and the prefix if you need to install somewhere else
