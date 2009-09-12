@@ -6,11 +6,22 @@ require 'digest/md5'
 
 class HaskellError < RuntimeError
 end
+
 module Hubris
   VERSION = '0.0.2'
   GHC_VERSION='20090903'
-  GHC ='/usr/local/bin/ghc-6.11.' + GHC_VERSION 
+  GHC ='ghc-6.11.' + GHC_VERSION 
 
+  # this really is pretty hideous, but I don't want to have to manually
+  # interpret mkmf's configuration as it varies from release to release.
+  require 'mkmf'
+  if (File.exists? "Makefile")
+    raise "Don't want to overwrite the makefile, so I'm doing the dumb thing and bailing out."
+  end
+  create_makefile("DummyExtension")
+  RubyHeader = `grep '^topdir' Makefile | sed 's/^.*= *//'`.strip
+  File.delete("Makefile")
+  puts "header is " + RubyHeader
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
   # function types.

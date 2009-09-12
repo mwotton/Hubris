@@ -27,8 +27,10 @@ file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
   # mac
   # system "c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
   #linux
-
-  system "c2hs -v --cppopts='-I/usr/local/include/ruby-1.9.1' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
+  #     Hubris::RubyHeader
+  str = "c2hs -v --cppopts='-I" + Hubris::RubyHeader + "' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
+  # print str
+  system(str)
 end
 
 require 'spec'
