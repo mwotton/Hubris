@@ -29,48 +29,21 @@ describe "Target" do
   #  (actually, sometimes you get the old one, sometimes you get the new one. SPOOKY.
   #  ... ?
   it "can overwrite old functions" do
+    pending "Haven't decided proper semantics"
+
     t=Target.new
     t.inline("myreverse (T_STRING s) = T_STRING $ Prelude.reverse s", {:no_strict => true })
     t.inline("myreverse (T_STRING s) = T_STRING $ ('a':Prelude.reverse s)", { :no_strict => true })
     t.myreverse("foot").should eql("atoof")
   end
 
-  it "can use arrays sensibly" do
-    t=Target.new
-    t.inline(
-"mysum (T_ARRAY r) = T_FIXNUM  $ sum $ map project r 
-  where project (T_FIXNUM l) = l
-        project _ = 0" , {:no_strict => true })
-      
-    t.mysum([1,2,3,4]).should eql(10)
-  end
-
-  
-  it "returns a haskell list as  an array" do
-    t=Target.new
-    t.inline(<<EOF
-elts (T_FIXNUM i) = T_ARRAY $ map T_FIXNUM $ take i [1..]
-elts _ = T_NIL
-EOF
-             )
-    t.elts(5).should eql([1,2,3,4,5])
-    t.elts("A Banana").should eql(nil)
-  end
-  
-#   it "handles hashes" do
-#     t=Target.new
-#     t.inline(<<EOF
-# use_hash (T_HASH h) = case h ! (T_STRING "
-# EOF
-#              )
-   
-#   end
   
   def be_quick
     simple_matcher("a small duration") { |given| given < 1.0 }
   end
   
   it "can insert the same code into two ruby modules" do
+    pending "rejig identifiers to include module in stubs"
     t=Target.new
     u=Target2.new
     t.inline("foobar _ = T_STRING \"rar rar rar\"")
@@ -100,6 +73,17 @@ EOF
   it "catches incomplete code unless you turn no_strict on" do
     t=Target.new
     lambda { t.inline("incomplete T_NIL = T_TRUE") }.should raise_error(HaskellError)
+  end
+  
+  
+  it "doesn't affect other modules" do
+    class Existing
+      include Hubris
+    end
+    e=Existing.new
+    t=Target.new
+    t.inline("fun _ = T_NIL")
+    lambda{ e.fun(10)}.should raise_error(NoMethodError)
   end
   
 end

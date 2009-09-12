@@ -93,5 +93,35 @@ big_inc _ = T_NIL
     lambda { t.mydouble(2.3)}.should raise_error(HaskellError)
     # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
   end
+  it "can use arrays sensibly" do
+    t=Target.new
+    t.inline(
+"mysum (T_ARRAY r) = T_FIXNUM  $ sum $ map project r 
+  where project (T_FIXNUM l) = l
+        project _ = 0" , {:no_strict => true })
+      
+    t.mysum([1,2,3,4]).should eql(10)
+  end
+
+  
+  it "returns a haskell list as  an array" do
+    t=Target.new
+    t.inline(<<EOF
+elts (T_FIXNUM i) = T_ARRAY $ map T_FIXNUM $ take i [1..]
+elts _ = T_NIL
+EOF
+             )
+    t.elts(5).should eql([1,2,3,4,5])
+    t.elts("A Banana").should eql(nil)
+  end
+  
+#   it "handles hashes" do
+#     t=Target.new
+#     t.inline(<<EOF
+# use_hash (T_HASH h) = case h ! (T_STRING "
+# EOF
+#              )
+   
+#   end
 
 end
