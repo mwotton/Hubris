@@ -17,9 +17,9 @@ module Hubris
 find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'
 EOF
   res = `#{ghc_cmd}`
-  puts res
+  #puts res
   ghcs = res.split.select { |candidate|
-    puts candidate
+    # puts candidate
     `#{candidate} --version | sed 's/^.*version *//'` >= '6.11' # yay, fragile
   }
 
