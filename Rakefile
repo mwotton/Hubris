@@ -24,10 +24,6 @@ Dir['tasks/**/*.rake'].each { |t| load t }
 
 
 file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
-  # mac
-  # system "c2hs -v --cppopts='-I/opt/local/include/ruby-1.9.1/ruby' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
-  #linux
-  #     Hubris::RubyHeader
   str = "c2hs -v --cppopts='-I" + Hubris::RubyHeader + "' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
   # print str
   system(str)

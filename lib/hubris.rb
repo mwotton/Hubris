@@ -12,6 +12,28 @@ module Hubris
   GHC_VERSION='20090903'
   GHC ='ghc-6.11.' + GHC_VERSION 
 
+  # more grungy shell hacking to find an appropriate GHC
+  ghc_cmd =<<'EOF'
+find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'
+EOF
+  res = `#{ghc_cmd}`
+  puts res
+  ghcs = res.split.select { |candidate|
+    puts candidate
+    `#{candidate} --version | sed 's/^.*version *//'` >= '6.11' # yay, fragile
+  }
+
+  if ghcs.empty?
+    raise HaskellError, "Can't find an appropriate ghc"
+  end
+  
+  #otherwise take the first
+  GHC = ghcs[0]
+  GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
+  GHC_VERSION = $1
+  
+  
+  
   # this really is pretty hideous, but I don't want to have to manually
   # interpret mkmf's configuration as it varies from release to release.
   require 'mkmf'
@@ -75,7 +97,7 @@ foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value -> 
 
     loaderCode =<<-"EOF"
 /* so, here's the story. We have the functions, and we need to expose them to Ruby */
-#include <ruby.h>
+#include "rshim.h"
 VALUE #{modName} = Qnil;
 extern void hs_init(int * argc, char ** argv[]);
 
@@ -158,10 +180,10 @@ void Init_#{libName}() {
   def ghcbuild(libFile, haskell_path, extra_c_src, options)
     # this could be even less awful.
 
-    command = "#{GHC} -Wall  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc6.11.#{GHC_VERSION} \
-    -L/usr/local/lib/ghc-6.11.#{GHC_VERSION} -no-hs-main \
-    -optl-Wl,-rpath,/usr/local/lib/ghc-6.11.#{GHC_VERSION} -o #{libFile} " + 
-    extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I/usr/local/include/ruby-1.9.1/ -I./lib'
+    command = "#{GHC} -Wall  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} \
+    -L/usr/local/lib/ghc-#{GHC_VERSION} -no-hs-main \
+    -optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} -o #{libFile} " + 
+    extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
     if (not options[:no_strict])
       command += ' -Werror ' # bondage and discipline
     end
