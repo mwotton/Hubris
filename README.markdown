@@ -64,6 +64,11 @@ to do.
     # when a new source tarball that works is up.
     tar -jxvf ghc-6.11.20090907-src.tar.bz2
     cd ghc-6.11.20090907
+
+    # have to get the latest ghc stuff, sadly.
+    ./darcs-all get
+    ./darcs-all pull
+
     # adjust the argument to -j to your number of cores, and the prefix if you need to install somewhere else
     sh boot && ./configure --enable-shared --prefix=/usr/local && make -j 4 && sudo make install
     cd ..
@@ -97,7 +102,7 @@ a copy of this software and associated documentation files (the
 'Software'), to deal in the Software without restriction, including
 without limitation the rights to use, copy, modify, merge, publish,
 distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
+            permit persons to whom the Software is furnished to do so, subject to
 the following conditions:
 
 The above copyright notice and this permission notice shall be
