@@ -79,11 +79,6 @@ to do.
     # There's a good chance you won't. Tell me what went wrong and i'll fix the docs.
     spec spec/*_spec.rb
 
-The most likely place for this to fail is in searching for header
-files. For the moment, look for the -I and -L directives in hubris.rb
-and the Rakefile and change them to match your system. This will be
-autoconfiscated soon and a little less painful.
-
 ## Contributors
 
 * Mark Wotton
