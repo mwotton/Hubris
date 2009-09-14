@@ -5,7 +5,12 @@ README.markdown
 Rakefile
 bin/jhc_builder
 lib/hubris.rb
+lib/rshim.c
+lib/rshim.h
+lib/RubyMap.hs
 lib/RubyMap.chs
+lib/RubyMap.chs.h
+lib/hubris_constants.rb
 sample/Makefile
 sample/Test.hs
 sample/hsload.rb
