@@ -16,3 +16,4 @@ sample/Test.hs
 sample/hsload.rb
 spec/spec.opts
 spec/spec_helper.rb
+bin/ghc_builder

@@ -115,13 +115,13 @@ foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value -> 
   end
 
 
-  def make_stub(modName, lib_name, functions)
+  def make_stub(module_name, lib_name, functions)
 
     copy_over 'rshim.h'
     loaderCode =<<-"EOF"
 /* so, here's the story. We have the functions, and we need to expose them to Ruby */
 #include "rshim.h"
-VALUE #{modName} = Qnil;
+VALUE #{module_name} = Qnil;
 extern void hs_init(int * argc, char ** argv[]);
 
 void Init_#{lib_name}() {
@@ -130,7 +130,7 @@ void Init_#{lib_name}() {
     char ** argv = malloc(sizeof(char**) * 1);
     argv[0]="haskell_extension";
     hs_init(&argc, &argv);
-    #{modName} = rb_define_class("#{modName}", rb_cObject);
+    #{module_name} = rb_define_class("#{module_name}", rb_cObject);
     EOF
 
     functions.each do |functionName|
@@ -141,7 +141,7 @@ void Init_#{lib_name}() {
 
 
     functions.each do |functionName|
-      loaderCode += "rb_define_method(#{modName},\"#{functionName}\",#{functionName}_external, 1);\n"
+      loaderCode += "rb_define_method(#{module_name},\"#{functionName}\",#{functionName}_external, 1);\n"
       # FIXME this is needed for GHC
       # loaderCode += "hs_add_root(__stginit_#{trans_name(functionName + '_external')});\n"
     end
@@ -161,51 +161,49 @@ void Init_#{lib_name}() {
     # """
     # this is a solved problem, guys. come ON. FIXME
 
-    builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) },
-                 "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
+    builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) }, "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
 
-                 signature = Digest::MD5.hexdigest(haskell_str)
-                 functions = extract_function_names(haskell_str)
+    signature = Digest::MD5.hexdigest(haskell_str)
+    functions = extract_function_names(haskell_str)
 
-                 return unless functions.size > 0
+    return unless functions.size > 0
 
-                 lib_name = "lib#{functions[0]}_#{signature}"; # unique signature
-                 lib_file = SO_CACHE + "/#{lib_name}.so"
+    lib_name = "lib#{functions[0]}_#{signature}"; # unique signature
+    lib_file = SO_CACHE + "/#{lib_name}.so"
 
-                 # Need a better name for 'file_name'
-                 file_name = File.join(Dir.tmpdir, functions[0] + "_source.hs") 
-                 File.open(file_name, "w") do |file|
+    # Need a better name for 'file_name'
+    file_name = File.join(Dir.tmpdir, functions[0] + "_source.hs") 
+    File.open(file_name, "w") do |file|
 
-                   if not File.exists?(lib_file)
-                     # so the hashing algorithm doesn't collide if we try building the same code
-                     # with jhc and ghc.
-                     #
-                     # argh, this isn't quite right. If we inline the same code but on a new ruby module
-                     # this won't create the new stubs. We want to be able to use new stubs but with the
-                     # old haskell lib. FIXME
-                     file.print("-- COMPILED WITH #{builder}\n")
-                     file.print(make_haskell_bindings(functions))
-                     file.print(haskell_str)
-                     file.flush
-                   end
-                   modName = self.class  
-                   File.open("stubs.c", "w") {|io| io.write(make_stub(modName,lib_name, functions))}
-                   # and it all comes together
+      if not File.exists?(lib_file)
+        # so the hashing algorithm doesn't collide if we try building the same code
+        # with jhc and ghc.
+        #
+        # argh, this isn't quite right. If we inline the same code but on a new ruby module
+        # this won't create the new stubs. We want to be able to use new stubs but with the
+        # old haskell lib. FIXME
+        file.print("-- COMPILED WITH #{builder}\n")
+        file.print(make_haskell_bindings(functions))
+        file.print(haskell_str)
+        file.flush
+      end
+      module_name = self.class  
+      File.open("stubs.c", "w") {|io| io.write(make_stub(module_name,lib_name, functions))}
+      # and it all comes together
 
-                   copy_over 'rshim.c'
+      copy_over 'rshim.c'
 
+      build_result = builders[builder].call(lib_file, file_name, ['stubs.c', 'rshim.c'], build_options)
+      # File.delete(file_name)    
+    end
 
-                   build_result = builders[builder].call(lib_file, file_name, ['stubs.c', 'rshim.c'], build_options)
-                   # File.delete(file_name)    
-                 end
-
-                 begin
-                   require lib_name
-                 rescue LoadError
-                   raise LoadError, "loading #{lib_name} failed, source was\n" + `cat #{file_name}` + 
+    begin
+      require lib_name
+    rescue LoadError
+      raise LoadError, "loading #{lib_name} failed, source was\n" + `cat #{file_name}` + 
                        "\n" + $!.to_s + "\n" + `nm #{lib_name}.so |grep ext` + "\n" + 
                        (build_result || "no build result?")
-                 end
+    end
 
   end
 
@@ -237,6 +235,8 @@ void Init_#{lib_name}() {
     -L/usr/local/lib/ghc-#{ghc_version} -no-hs-main \
     -optl-Wl,-rpath,/usr/local/lib/ghc-#{ghc_version} -o #{lib_file} " + 
     extra_c_src.join(' ') +  ' RubyMap.hs -I' + ruby_header 
+
+    warn command
 
     #  This was preventing compilation:
     #if (not options[:no_strict])
