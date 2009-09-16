@@ -14,7 +14,8 @@ improve the docs.
 
 ## Synopsis
 
-UPDATE: so it now works for fixed length integers, strings and floats.
+UPDATE: so it now works for fixed length integers, strings and floats,
+as well as arrays.
 
 anyway, as you can see in the spec, you can use it a little like this:
 
@@ -47,8 +48,9 @@ to do.
 
 * haskell platform (or ghc-6.8.2 or better and c2hs)
 * ruby 1.8.6 or higher
-* Linux (Mac OS X is temporarily broken because of dynlibs on
-  GHC. High priority to get this working.)
+* Linux or Mac. See
+  http://www.shimweasel.com/2009/09/14/unprincipled-skulduggery-with-ghc-6-12-dylibs-on-mac-os-x
+  and the following entry for more info on the Mac build.
 * zsh or bash
 * git
 
