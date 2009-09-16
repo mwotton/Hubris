@@ -1,6 +1,18 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 -- {-# LANGUAGE TypeSynonymInstances #-}
 
+{- TODO
+
+Rip the array trnaslation stuff out to a utility function. same with hashes.
+
+install as package. This is a bit iffy for GHC/JHC compatibility - if we commit to
+Cabal, that leaves JHC out in the cold.
+
+perhaps need cabal file for ghc and equivalent for jhc.
+
+-}
+
+
 module RubyMap where
 #include "rshim.h"
 #include <ruby.h>
