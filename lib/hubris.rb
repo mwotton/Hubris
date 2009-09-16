@@ -119,6 +119,8 @@ void Init_#{libName}() {
 
   
     functions.each do |functionName|
+      # FIXME this is the worng place to be binding methods. Can we bind a bare C method in Ruby
+      # instead?
       loaderCode += "rb_define_method(#{modName},\"#{functionName}\",#{functionName}_external, 1);\n"
       # FIXME this is needed for GHC
       # loaderCode += "hs_add_root(__stginit_#{trans_name(functionName + '_external')});\n"
@@ -148,7 +150,18 @@ void Init_#{libName}() {
       return
     end
     libName = "lib#{functions[0]}_#{signature}"; # unique signature
-    libFile = SO_CACHE + "/#{libName}.so"
+    
+    dylib_suffix = case Config::CONFIG['target_os']
+                   when /darwin/
+                     "bundle"
+                   when /linux/
+                     "so"
+                   else
+                     "so" #take a punt
+                   end
+    libFile = SO_CACHE + "/" + libName + '.' + dylib_suffix
+                                                   
+                                                   
     file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
     if not File.exists?(libFile)
       # so the hashing algorithm doesn't collide if we try building the same code
@@ -171,20 +184,24 @@ void Init_#{libName}() {
     end
     begin
       require libName
+      # raise LoadError
     rescue LoadError
       raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
-                       "\n" + $!.to_s + "\n" + `nm #{libName}.so |grep ext` + "\n" + 
-                       (build_result || "no build result?")
+                       "\n" + $!.to_s + "\n" + `nm #{libFile} |grep 'ext'` + "\n" + 
+                       (build_result || "no build result?") + "\n"
     end
   end
   
   def ghcbuild(libFile, haskell_path, extra_c_src, options)
     # this could be even less awful.
 
-    command = "#{GHC} -Wall  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} \
-    -L/usr/local/lib/ghc-#{GHC_VERSION} -no-hs-main \
-    -optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} -o #{libFile} " + 
-    extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
+    command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} \
+    -L/usr/local/lib/ghc-#{GHC_VERSION} " +
+     "-no-hs-main " +
+      #     -L/Users/mwotton/projects/ghc \
+      # -optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} " +
+      # "-optl-Wl,-macosx_version_min,10.5 " +
+    "-o #{libFile} " +  extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
     if (not options[:no_strict])
       command += ' -Werror ' # bondage and discipline
     end
