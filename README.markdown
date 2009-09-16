@@ -58,17 +58,8 @@ to do.
     sudo gem install rake open4 rspec
     # get c2hs
     cabal install c2hs
-    wget http://darcs.haskell.org/ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
-    # WARNING this tarball does not currently work. You'll need to
-    # pull the latest code from the darcs GHC repo. I'll update this
-    # when a new source tarball that works is up.
-    tar -jxvf ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
-    cd ghc-HEAD-2009-09-09
-    
-    # have to get the latest ghc stuff, sadly.
-    darcs pull -a
-    ./darcs-all get
-
+    http://www.haskell.org/ghc/dist/current/dist/ghc-6.11.20090913-src.tar.bz2
+    cd ghc-6.11.20090913
     # adjust the argument to -j to your number of cores, and the prefix if you need to install somewhere else
     sh boot && ./configure --enable-shared --prefix=/usr/local && make -j 4 && sudo make install
     cd ..
@@ -78,6 +69,20 @@ to do.
     # here's where you'll see a whole lot of successes, if you're very lucky
     # There's a good chance you won't. Tell me what went wrong and i'll fix the docs.
     spec spec/*_spec.rb
+
+If the GHC tarball doesn't work, you might have to get the latest
+version from darcs. Try the recipe above first, though.
+
+    wget http://darcs.haskell.org/ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
+    # WARNING this tarball does not currently work. You'll need to
+    # pull the latest code from the darcs GHC repo. I'll update this
+    # when a new source tarball that works is up.
+    tar -jxvf ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
+    cd ghc-HEAD-2009-09-09
+    # have to get the latest ghc stuff, sadly.
+    darcs pull -a
+    ./darcs-all get
+
 
 ## Contributors
 
