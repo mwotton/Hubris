@@ -9,7 +9,7 @@ end
 
 module Hubris
   VERSION = '0.0.2'
-  SO_CACHE = "~/.hubris_cache"
+  SO_CACHE = File.expand_path("~/.hubris_cache")
 
   system('mkdir ' + SO_CACHE)
   $:.push(SO_CACHE)
@@ -161,9 +161,12 @@ void Init_#{libName}() {
                    end
     libFile = SO_CACHE + "/" + libName + '.' + dylib_suffix
                                                    
-                                                   
+    
     file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
-    if not File.exists?(libFile)
+    # if the haskell libraries have changed out from under us, that's just too bad.
+    # If we've changed details of this script, however, we probably want to rebuild,
+    # just to be safe.
+    if !File.exists?(libFile) or File.mtime(__FILE__) >= File.mtime(libFile)
       # so the hashing algorithm doesn't collide if we try building the same code
       # with jhc and ghc.
       #
@@ -195,11 +198,11 @@ void Init_#{libName}() {
   def ghcbuild(libFile, haskell_path, extra_c_src, options)
     # this could be even less awful.
 
-    command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} \
-    -L/usr/local/lib/ghc-#{GHC_VERSION} " +
+    command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} " +
+     "-L/usr/local/lib/ghc-#{GHC_VERSION} " +
      "-no-hs-main " +
       #     -L/Users/mwotton/projects/ghc \
-      # -optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} " +
+      "-optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} " +
       # "-optl-Wl,-macosx_version_min,10.5 " +
     "-o #{libFile} " +  extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
     if (not options[:no_strict])
