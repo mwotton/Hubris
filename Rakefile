@@ -20,7 +20,7 @@ $hoe = Hoe.spec 'hubris' do
 end
 
 #require 'newgem/tasks'
-Dir['tasks/**/*.rake'].each { |t| load t }
+# Dir['tasks/**/*.rake'].each { |t| load t }
 
 
 file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
