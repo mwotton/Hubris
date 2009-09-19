@@ -2,6 +2,7 @@ require 'tmpdir'
 require 'rubygems'
 require 'open4'
 require 'digest/md5'
+require 'rbconfig'
 # TODO delete old files
 
 class HaskellError < RuntimeError
@@ -33,18 +34,8 @@ EOF
   GHC = ghcs[0]
   GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
   GHC_VERSION = $1
-  
-  
-  
-  # this really is pretty hideous, but I don't want to have to manually
-  # interpret mkmf's configuration as it varies from release to release.
-  require 'mkmf'
-  if (File.exists? "Makefile")
-    raise "Don't want to overwrite the makefile, so I'm doing the dumb thing and bailing out."
-  end
-  create_makefile("DummyExtension")
-  RubyHeader = `grep '^topdir' Makefile | sed 's/^.*= *//'`.strip
-  File.delete("Makefile")
+  RubyHeader = Config::CONFIG['rubyhdrdir']
+
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
   # function types.
