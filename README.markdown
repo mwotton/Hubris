@@ -14,7 +14,8 @@ improve the docs.
 
 ## Synopsis
 
-UPDATE: so it now works for fixed length integers, strings and floats.
+UPDATE: so it now works for fixed length integers, strings and floats,
+as well as arrays.
 
 anyway, as you can see in the spec, you can use it a little like this:
 
@@ -47,8 +48,9 @@ to do.
 
 * haskell platform (or ghc-6.8.2 or better and c2hs)
 * ruby 1.8.6 or higher
-* Linux (Mac OS X is temporarily broken because of dynlibs on
-  GHC. High priority to get this working.)
+* Linux or Mac. See
+  http://www.shimweasel.com/2009/09/14/unprincipled-skulduggery-with-ghc-6-12-dylibs-on-mac-os-x
+  and the following entry for more info on the Mac build.
 * zsh or bash
 * git
 
@@ -58,17 +60,8 @@ to do.
     sudo gem install rake open4 rspec
     # get c2hs
     cabal install c2hs
-    wget http://darcs.haskell.org/ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
-    # WARNING this tarball does not currently work. You'll need to
-    # pull the latest code from the darcs GHC repo. I'll update this
-    # when a new source tarball that works is up.
-    tar -jxvf ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
-    cd ghc-HEAD-2009-09-09
-    
-    # have to get the latest ghc stuff, sadly.
-    darcs pull -a
-    ./darcs-all get
-
+    http://www.haskell.org/ghc/dist/current/dist/ghc-6.11.20090913-src.tar.bz2
+    cd ghc-6.11.20090913
     # adjust the argument to -j to your number of cores, and the prefix if you need to install somewhere else
     sh boot && ./configure --enable-shared --prefix=/usr/local && make -j 4 && sudo make install
     cd ..
@@ -78,6 +71,20 @@ to do.
     # here's where you'll see a whole lot of successes, if you're very lucky
     # There's a good chance you won't. Tell me what went wrong and i'll fix the docs.
     spec spec/*_spec.rb
+
+If the GHC tarball doesn't work, you might have to get the latest
+version from darcs. Try the recipe above first, though.
+
+    wget http://darcs.haskell.org/ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
+    # WARNING this tarball does not currently work. You'll need to
+    # pull the latest code from the darcs GHC repo. I'll update this
+    # when a new source tarball that works is up.
+    tar -jxvf ghc-HEAD-2009-09-09-ghc-corelibs.tar.bz2
+    cd ghc-HEAD-2009-09-09
+    # have to get the latest ghc stuff, sadly.
+    darcs pull -a
+    ./darcs-all get
+
 
 ## Contributors
 
