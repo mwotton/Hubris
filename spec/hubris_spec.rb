@@ -1,4 +1,4 @@
-require File.dirname(__FILE__) + '/spec_helper.rb'
+load File.dirname(__FILE__) + '/spec_helper.rb'
 
 # # just want to check it's actually possible to load a library dynamically
 # describe "dlload" do
@@ -125,7 +125,7 @@ EOF
 #   end
 
 end
-require File.dirname(__FILE__) + '/spec_helper.rb'
+load File.dirname(__FILE__) + '/spec_helper.rb'
 
 class Target
   include Hubris
