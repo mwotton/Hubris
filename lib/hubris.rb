@@ -34,7 +34,8 @@ EOF
   GHC = ghcs[0]
   GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
   GHC_VERSION = $1
-  RubyHeader = Config::CONFIG['rubyhdrdir']
+  RubyHeader = Config::CONFIG['rubyhdrdir'] or
+    raise HaskellError, "Can't get rubyhdrdir"
 
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
