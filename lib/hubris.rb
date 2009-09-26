@@ -8,6 +8,13 @@ require 'rbconfig'
 class HaskellError < RuntimeError
 end
 
+def ruby_header_dir
+# Possible config values for 1.8.6:
+  # archdir and topdir
+  # For 1.9: rubyhdrdir
+  Config::CONFIG['rubyhdrdir'] || Config::CONFIG['topdir'] 
+end
+
 module Hubris
   VERSION = '0.0.2'
   SO_CACHE = File.expand_path("~/.hubris_cache")
@@ -34,7 +41,7 @@ EOF
   GHC = ghcs[0]
   GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
   GHC_VERSION = $1
-  RubyHeader = Config::CONFIG['rubyhdrdir'] or
+  RubyHeader = ruby_header_dir or
   raise HaskellError, "Can't get rubyhdrdir"
 
   # TODO add foreign export calls immediately for each toplevel func
