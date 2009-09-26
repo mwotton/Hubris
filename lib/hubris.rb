@@ -2,75 +2,46 @@ require 'tmpdir'
 require 'rubygems'
 require 'open4'
 require 'digest/md5'
-require 'hubris_constants'
-require 'fileutils'
-
-# TODO delete old files
-
 require 'rbconfig'
-
+# TODO delete old files
 
 class HaskellError < RuntimeError
 end
 
 module Hubris
+  VERSION = '0.0.2'
+  SO_CACHE = File.expand_path("~/.hubris_cache")
 
-  @@ghc_version = nil
-  @@path_to_ruby_source_include_dir = nil
-  @@ghc_command = nil
-
-
-  # Allow setting of basic values
-  def self.ruby_header= path_to_ruby_source_include_dir 
-    @@path_to_ruby_source_include_dir = path_to_ruby_source_include_dir
-  end
-
-  def self.ghc_cmd= ghc_command
-    @@ghc_command = ghc_command
-  end
-
-  def self.ghc_version=  version_string
-    @@ghc_version = version_string 
-  end
-
-  def ghc_cmd
-    @@ghc_cmd ||= `which ghc`.to_s.strip
-  end
-
-  def ghc_version
-    @@ghc_version ||= `#{ghc_cmd} --version`.split('version').last.strip # Fragile! FIXME
-  end
-
-  def ruby_header
-    @@path_to_ruby_source_include_dir  ||= Config::CONFIG['archdir']  + '/'
-  end
-
-
-  def lib_folder
-    File.expand_path(File.dirname(__FILE__)) 
-  end
-
-  system "mkdir #{SO_CACHE}" 
-
-  # Would unshift be better/
+  system('mkdir ' + SO_CACHE)
   $:.push(SO_CACHE)
+  # more grungy shell hacking to find an appropriate GHC
+  # arguably should be done at install...
+  ghc_cmd =<<'EOF'
+find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'
+EOF
+  res = `#{ghc_cmd}`
+  #puts res
+  ghcs = res.split.select { |candidate|
+    # puts candidate
+    `#{candidate} --version | sed 's/^.*version *//'` >= '6.11' # yay, fragile
+  }
 
-
-  # this really is pretty hideous, but I don't want to have to manually
-  # interpret mkmf's configuration as it varies from release to release.
-  require 'mkmf'
-  #if File.exists? "Makefile"
-  #  raise "Don't want to overwrite the makefile, so I'm doing the dumb thing and bailing out."
-  #end
-
-  #  create_makefile "DummyExtension"
-  #File.delete "Makefile" 
+  if ghcs.empty?
+    raise HaskellError, "Can't find an appropriate ghc"
+  end
+  
+  #otherwise take the first
+  GHC = ghcs[0]
+  GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
+  GHC_VERSION = $1
+  RubyHeader = Config::CONFIG['rubyhdrdir'] or
+    raise HaskellError, "Can't get rubyhdrdir"
 
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
   # function types.
   # tricky bit: generating interface for each
-  def extract_function_names haskell_str
+  def extract_function_names(haskell_str)
     functions = {}
     haskell_str.each_line do |line|
       # skkeeeeeeetchy. FIXME use haskell-src-exts or something more sensible here
@@ -80,7 +51,7 @@ module Hubris
     end    
     functions.keys
   end
-
+  
   def make_haskell_bindings(functions)
     prelude =<<-EOF
 {-# LANGUAGE ScopedTypeVariables, FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
@@ -109,19 +80,15 @@ foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value -> 
     end
     return prelude + bindings
   end
-
+  
   def trans_name(func)
     func.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zd').gsub(/_/,'zu').gsub(/'/, 'zq') 
   end
 
-
-  def make_stub(module_name, lib_name, functions)
-
-    copy_over 'rshim.h'
-    loaderCode =<<-"EOF"
-/* so, here's the story. We have the functions, and we need to expose them to Ruby */
+  def base_loader_code mod_name, lib_name
+    %~/* so, here's the story. We have the functions, and we need to expose them to Ruby */
 #include "rshim.h"
-VALUE #{module_name} = Qnil;
+VALUE #{mod_name} = Qnil;
 extern void hs_init(int * argc, char ** argv[]);
 
 void Init_#{lib_name}() {
@@ -130,24 +97,31 @@ void Init_#{lib_name}() {
     char ** argv = malloc(sizeof(char**) * 1);
     argv[0]="haskell_extension";
     hs_init(&argc, &argv);
-    #{module_name} = rb_define_class("#{module_name}", rb_cObject);
-    EOF
+    #{mod_name} = rb_define_class("#{mod_name}", rb_cObject);
+    ~
 
-    functions.each do |functionName|
-      loaderCode += "VALUE #{functionName}_external(VALUE);\n"
-      # FIXME add the stg roots as well
-      #  loaderCode += "extern void __stginit_#{functionName}zuexternal(void);\n"
-    end
-
-
-    functions.each do |functionName|
-      loaderCode += "rb_define_method(#{module_name},\"#{functionName}\",#{functionName}_external, 1);\n"
-      # FIXME this is needed for GHC
-      # loaderCode += "hs_add_root(__stginit_#{trans_name(functionName + '_external')});\n"
-    end
-    return loaderCode + "}\n"
   end
 
+  def make_stub(mod_name, lib_name, functions)
+      loader_code = base_loader_code(mod_name, lib_name)
+
+    functions.each do |function_name|
+      loader_code += "VALUE #{function_name}_external(VALUE);\n"
+      # FIXME add the stg roots as well
+      #  loaderCode += "extern void __stginit_#{function_name}zuexternal(void);\n"
+    end
+
+  
+    functions.each do |function_name|
+      # FIXME this is the worng place to be binding methods. Can we bind a bare C method in Ruby
+      # instead?
+      loader_code += "rb_define_method(#{mod_name},\"#{function_name}\",#{function_name}_external, 1);\n"
+      # FIXME this is needed for GHC
+      # loader_code += "hs_add_root(__stginit_#{trans_name(function_name + '_external')});\n"
+    end
+    return loader_code + "}\n"
+  end
+  
   def inline(haskell_str, build_options={ })
     builder = "ghc"
     # this is a bit crap. You wouldn't have to specify the args in an FP language :/
@@ -160,95 +134,83 @@ void Init_#{lib_name}() {
     # puts x  # x is now 4, not 3
     # """
     # this is a solved problem, guys. come ON. FIXME
-
-    builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) }, "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
-
+    
+    builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) },
+                 "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
+ 
     signature = Digest::MD5.hexdigest(haskell_str)
     functions = extract_function_names(haskell_str)
+    unless functions.size > 0
+      return
+    end
+    libName = "lib#{functions[0]}_#{signature}"; # unique signature
+    
+    dylib_suffix = case Config::CONFIG['target_os']
+                   when /darwin/
+                     "bundle"
+                   when /linux/
+                     "so"
+                   else
+                     "so" #take a punt
+                   end
+    libFile = SO_CACHE + "/" + libName + '.' + dylib_suffix
+                                                   
+    
+    file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
+    # if the haskell libraries have changed out from under us, that's just too bad.
+    # If we've changed details of this script, however, we probably want to rebuild,
+    # just to be safe.
+    if !File.exists?(libFile) or File.mtime(__FILE__) >= File.mtime(libFile)
+      # so the hashing algorithm doesn't collide if we try building the same code
+      # with jhc and ghc.
+      #
+      # argh, this isn't quite right. If we inline the same code but on a new ruby module
+      # this won't create the new stubs. We want to be able to use new stubs but with the
+      # old haskell lib. FIXME
+      file.print("-- COMPILED WITH #{builder}\n")
+      file.print(make_haskell_bindings(functions))
+      file.print(haskell_str)
+      file.flush
 
-    return unless functions.size > 0
-
-    lib_name = "lib#{functions[0]}_#{signature}"; # unique signature
-    lib_file = SO_CACHE + "/#{lib_name}.so"
-
-    # Need a better name for 'file_name'
-    file_name = File.join(Dir.tmpdir, functions[0] + "_source.hs") 
-    File.open(file_name, "w") do |file|
-
-      if not File.exists?(lib_file)
-        # so the hashing algorithm doesn't collide if we try building the same code
-        # with jhc and ghc.
-        #
-        # argh, this isn't quite right. If we inline the same code but on a new ruby module
-        # this won't create the new stubs. We want to be able to use new stubs but with the
-        # old haskell lib. FIXME
-        file.print("-- COMPILED WITH #{builder}\n")
-        file.print(make_haskell_bindings(functions))
-        file.print(haskell_str)
-        file.flush
-      end
-      module_name = self.class  
-      File.open("stubs.c", "w") {|io| io.write(make_stub(module_name,lib_name, functions))}
+      modName = self.class  
+      File.open("stubs.c", "w") {|io| io.write(make_stub(modName,libName, functions))}
       # and it all comes together
-
-      copy_over 'rshim.c'
-
-      build_result = builders[builder].call(lib_file, file_name, ['stubs.c', 'rshim.c'], build_options)
-      # File.delete(file_name)    
+      
+      build_result = builders[builder].call(libFile, file.path, ['stubs.c','./lib/rshim.c'], build_options)
+      # File.delete(file.path)    
     end
-
     begin
-      require lib_name
+      require libName
+      # raise LoadError
     rescue LoadError
-      raise LoadError, "loading #{lib_name} failed, source was\n" + `cat #{file_name}` + 
-                       "\n" + $!.to_s + "\n" + `nm #{lib_name}.so |grep ext` + "\n" + 
-                       (build_result || "no build result?")
+      raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
+                       "\n" + $!.to_s + "\n" + `nm #{libFile} |grep 'ext'` + "\n" + 
+                       (build_result || "no build result?") + "\n"
     end
-
   end
-
-
-  def copy_over file 
-    here = File.expand_path(File.dirname(__FILE__))  # REPLACE ME WITH METHOD OR SOMETING. FIXME
-    pwd = Dir.pwd
-    FileUtils.cp here + '/' + file,  pwd + '/' + file
-
-  end
-
-
-
-  def build_ruby_map
-
-  end
-
-  def ghcbuild(lib_file, haskell_path, extra_c_src, options)
+  
+  def ghcbuild(libFile, haskell_path, extra_c_src, options)
     # this could be even less awful.
 
-    # Question: Do we need to build this 'live', or can this be pre-built and re-used when deploying an app?
-    # Alternatively, can we build it once and then reuse it?
-    # And does it need to be any place special (aside from the need to have write permission)?
-    copy_over 'RubyMap.hs' # Bring a copy of this file to the current working directory
-
-
-    # This ends up placing  RubyMap in the same dir as the calling application.  Is that good? Bad?
-    command = "#{ghc_cmd} -Wall  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{ghc_version} \
-    -L/usr/local/lib/ghc-#{ghc_version} -no-hs-main \
-    -optl-Wl,-rpath,/usr/local/lib/ghc-#{ghc_version} -o #{lib_file} " + 
-    extra_c_src.join(' ') +  ' RubyMap.hs -I' + ruby_header 
-
-    warn command
-
-    #  This was preventing compilation:
-    #if (not options[:no_strict])
-    #   command += ' -Werror ' # bondage and discipline
-    #end
-
-    success, msg = noisy(command)
-    raise( HaskellError, "ghc build failed " + msg + `cat #{haskell_path}` ) unless success
+    command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} " +
+     "-L/usr/local/lib/ghc-#{GHC_VERSION} " +
+     "-no-hs-main " +
+      #     -L/Users/mwotton/projects/ghc \
+      "-optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} " +
+      # "-optl-Wl,-macosx_version_min,10.5 " +
+    "-o #{libFile} " +  extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
+    if (not options[:no_strict])
+      command += ' -Werror ' # bondage and discipline
+    end
+    success,msg=noisy(command)
+    # puts [success,msg]
+    unless success
+      raise HaskellError, "ghc build failed " + msg + `cat #{haskell_path}`
+    end
     return msg
   end
 
-  def jhcbuild(lib_file, haskell_path, extra_c_src)
+  def jhcbuild(libFile, haskell_path, extra_c_src)
     noisy("rm hs.out_code.c 2>/dev/null")
     # puts "building\n#{file.read}"
     success, msg = noisy("jhc  -dc #{haskell_path} -papplicative -ilib")
@@ -256,7 +218,7 @@ void Init_#{lib_name}() {
       raise HaskellError, "JHC build failed:\nsource\n" + `cat #{haskell_path}` + "\n#{msg}"
     end
     # puts msg
-
+   
     # output goes to hs_out.code.c
     # don't need to grep out main any more
     # we do need to grep out rshim.h, though. why? no one knows. better solution please
@@ -268,32 +230,32 @@ void Init_#{lib_name}() {
                 '-fPIC',
                 '-shared'
                 # '-lruby',
-    ]
+                ]
     mACFLAGS = [
                 '-undefined suppress',
                 '-flat_namespace'
-    ]
+              ]
     cPPFLAGS = [
                 '-D_GNU_SOURCE',
                 '-D_JHC_STANDALONE=0',
                 '-DNDEBUG'
-    ]
+               ]
     cFLAGS = ['-std=gnu99',
               '-falign-functions=4',
               '-ffast-math',
               '-Wshadow', '-Wextra', '-Wall', '-Wno-unused-parameter',
-              "-g -O3 -o #{lib_file}"]
+              "-g -O3 -o #{libFile}"]
     sRC = [
            './hs.out_code.c'
-    ] + extra_c_src
+          ] + extra_c_src
 
     mACiNCLUDES = ['-I/opt/local/include/ruby-1.9.1/', '-I./lib']
     iNCLUDES = ['-I/usr/local/include/ruby-1.9.1/', '-I./lib']
 
-    system "rm #{lib_file} 2>/dev/null"
+    system "rm #{libFile} 2>/dev/null"
 
     success, msg = noisy("gcc " + [cPPFLAGS, cFLAGS, lDFLAGS, iNCLUDES, sRC].join(" "))
-    puts "#{'-' * 30}\n" +  msg + "\n#{'-' * 30}\n"
+    puts msg
     unless success
       raise SyntaxError, "C build failed:\n#{msg}"
     end
@@ -307,42 +269,9 @@ def noisy(str)
     [true, str + "\n"]
   else
     msg = <<-"EOF"
-\n#{'-' * 30}\noutput: #{stdout.read}
-\n#{'-' * 30}\nerror:  #{stderr.read}
+output: #{stdout.read}
+error:  #{stderr.read}
     EOF
     [false, str + "\n" + msg]
   end
 end
-
-__END__
-
-deprecated stuff:
-
-  Working from the idea that the user will either have a default ghc that Just Works, or
-can specify the information needed.  So auto-detection is dropped
-
-# more grungy shell hacking to find an appropriate GHC
-# arguably should be done at install...
-#  ghc_cmd =<<'EOF'
-#find $(echo $PATH | sed -e 's/:/ /g') -perm /111 -regex '.*/ghc\(\-[0-9\.]*\)'
-#EOF
-#ghc_cmd = `which ghc`.to_s.strip
-#res = `#{ghc_cmd}`
-##puts res
-#ghcs = res.split.select { |candidate|
-#  # puts candidate
-#  `#{candidate} --version | sed 's/^.*version *//'` >= '6.11' # yay, fragile
-#}
-
-# if ghcs.empty?
-#if self.ghc_cmd.empty?
-#  raise HaskellError, "Can't find an appropriate ghc"
-#end
-
-#otherwise take the first
-#GHC = ghc_cmd # ghcs[0]
-# GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
-#GHC_VERSION = $1
-#GHC_VERSION =   ghc_version # `ghc --version`.split('version').last.strip # Fragile! FIXME
-
-
