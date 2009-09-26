@@ -128,8 +128,23 @@ void Init_#{lib_name}() {
     return loader_code + "}\n"
   end
 
+  def dylib_suffix
+    case Config::CONFIG['target_os']
+    when /darwin/
+                     "bundle"
+    when /linux/
+                     "so"
+    else
+                     "so" #take a punt
+    end
+  end
+
+
+  def builder
+    'ghc'
+  end
+
   def inline(haskell_str, build_options={ })
-    builder = "ghc"
     # this is a bit crap. You wouldn't have to specify the args in an FP language :/
     # should probably switch out to a couple of single-method classes
     # argh
@@ -145,53 +160,51 @@ void Init_#{lib_name}() {
 
     signature = Digest::MD5.hexdigest(haskell_str)
     functions = extract_function_names(haskell_str)
-    unless functions.size > 0
-      return
-    end
-    libName = "lib#{functions[0]}_#{signature}"; # unique signature
 
-    dylib_suffix = case Config::CONFIG['target_os']
-                   when /darwin/
-                     "bundle"
-                   when /linux/
-                     "so"
-                   else
-                     "so" #take a punt
-                   end
-    lib_file = SO_CACHE + "/" + libName + '.' + dylib_suffix
+    return unless functions.size > 0
+
+    lib_name = "lib#{functions[0]}_#{signature}"; # unique signature
+    lib_file = SO_CACHE + "/" + lib_name + '.' + dylib_suffix
+    file_path = File.join(Dir.tmpdir, functions[0] + "_source.hs")
 
 
-    file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
     # if the haskell libraries have changed out from under us, that's just too bad.
     # If we've changed details of this script, however, we probably want to rebuild,
     # just to be safe.
     if !File.exists?(lib_file) or File.mtime(__FILE__) >= File.mtime(lib_file)
-      # so the hashing algorithm doesn't collide if we try building the same code
-      # with jhc and ghc.
-      #
-      # argh, this isn't quite right. If we inline the same code but on a new ruby module
-      # this won't create the new stubs. We want to be able to use new stubs but with the
-      # old haskell lib. FIXME
-      file.print("-- COMPILED WITH #{builder}\n")
-      file.print(make_haskell_bindings(functions))
-      file.print(haskell_str)
-      file.flush
+      mod_name = self.class  
+      write_hs_file( file_path, haskell_str, functions, mod_name, lib_name )
+      File.open("stubs.c", "w") {|io| io.write(make_stub(mod_name, lib_name, functions))}
+     # and it all comes together
+     build_result = builders[builder].call(lib_file, file_path , ['stubs.c','./lib/rshim.c'], build_options)
 
-      modName = self.class  
-      File.open("stubs.c", "w") {|io| io.write(make_stub(modName,libName, functions))}
-      # and it all comes together
-
-      build_result = builders[builder].call(lib_file, file.path, ['stubs.c','./lib/rshim.c'], build_options)
-      # File.delete(file.path)    
     end
+
     begin
-      require libName
+      require lib_name
       # raise LoadError
     rescue LoadError
-      raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
+      raise LoadError, "loading #{lib_name} failed, source was\n" + `cat #{file_path}` + 
                        "\n" + $!.to_s + "\n" + `nm #{lib_file} |grep 'ext'` + "\n" + 
                        (build_result || "no build result?") + "\n"
     end
+
+  end
+
+  def write_hs_file file_path, haskell_str, functions, mod_name, lib_name
+      File.open( file_path , "w") do |file|
+        # so the hashing algorithm doesn't collide if we try building the same code
+        # with jhc and ghc.
+        #
+        # argh, this isn't quite right. If we inline the same code but on a new ruby module
+        # this won't create the new stubs. We want to be able to use new stubs but with the
+        # old haskell lib. FIXME
+        file.print("-- COMPILED WITH #{builder}\n")
+        file.print(make_haskell_bindings(functions))
+        file.print(haskell_str)
+        file.flush
+       end
+      
   end
 
   def ghcbuild(lib_file, haskell_path, extra_c_src, options)
