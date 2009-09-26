@@ -29,13 +29,13 @@ EOF
   if ghcs.empty?
     raise HaskellError, "Can't find an appropriate ghc"
   end
-  
+
   #otherwise take the first
   GHC = ghcs[0]
   GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
   GHC_VERSION = $1
   RubyHeader = Config::CONFIG['rubyhdrdir'] or
-    raise HaskellError, "Can't get rubyhdrdir"
+  raise HaskellError, "Can't get rubyhdrdir"
 
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
@@ -51,7 +51,7 @@ EOF
     end    
     functions.keys
   end
-  
+
   def make_haskell_bindings(functions)
     prelude =<<-EOF
 {-# LANGUAGE ScopedTypeVariables, FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
@@ -80,7 +80,7 @@ foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value -> 
     end
     return prelude + bindings
   end
-  
+
   def trans_name(func)
     func.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zd').gsub(/_/,'zu').gsub(/'/, 'zq') 
   end
@@ -103,7 +103,7 @@ void Init_#{lib_name}() {
   end
 
   def make_stub(mod_name, lib_name, functions)
-      loader_code = base_loader_code(mod_name, lib_name)
+    loader_code = base_loader_code(mod_name, lib_name)
 
     functions.each do |function_name|
       loader_code += "VALUE #{function_name}_external(VALUE);\n"
@@ -111,7 +111,7 @@ void Init_#{lib_name}() {
       #  loaderCode += "extern void __stginit_#{function_name}zuexternal(void);\n"
     end
 
-  
+
     functions.each do |function_name|
       # FIXME this is the worng place to be binding methods. Can we bind a bare C method in Ruby
       # instead?
@@ -121,7 +121,7 @@ void Init_#{lib_name}() {
     end
     return loader_code + "}\n"
   end
-  
+
   def inline(haskell_str, build_options={ })
     builder = "ghc"
     # this is a bit crap. You wouldn't have to specify the args in an FP language :/
@@ -134,71 +134,71 @@ void Init_#{lib_name}() {
     # puts x  # x is now 4, not 3
     # """
     # this is a solved problem, guys. come ON. FIXME
-    
+
     builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) },
                  "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
- 
-    signature = Digest::MD5.hexdigest(haskell_str)
-    functions = extract_function_names(haskell_str)
-    unless functions.size > 0
-      return
-    end
-    libName = "lib#{functions[0]}_#{signature}"; # unique signature
-    
-    dylib_suffix = case Config::CONFIG['target_os']
-                   when /darwin/
-                     "bundle"
-                   when /linux/
-                     "so"
-                   else
-                     "so" #take a punt
-                   end
-    libFile = SO_CACHE + "/" + libName + '.' + dylib_suffix
-                                                   
-    
-    file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
-    # if the haskell libraries have changed out from under us, that's just too bad.
-    # If we've changed details of this script, however, we probably want to rebuild,
-    # just to be safe.
-    if !File.exists?(libFile) or File.mtime(__FILE__) >= File.mtime(libFile)
-      # so the hashing algorithm doesn't collide if we try building the same code
-      # with jhc and ghc.
-      #
-      # argh, this isn't quite right. If we inline the same code but on a new ruby module
-      # this won't create the new stubs. We want to be able to use new stubs but with the
-      # old haskell lib. FIXME
-      file.print("-- COMPILED WITH #{builder}\n")
-      file.print(make_haskell_bindings(functions))
-      file.print(haskell_str)
-      file.flush
 
-      modName = self.class  
-      File.open("stubs.c", "w") {|io| io.write(make_stub(modName,libName, functions))}
-      # and it all comes together
-      
-      build_result = builders[builder].call(libFile, file.path, ['stubs.c','./lib/rshim.c'], build_options)
-      # File.delete(file.path)    
-    end
-    begin
-      require libName
-      # raise LoadError
-    rescue LoadError
-      raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
-                       "\n" + $!.to_s + "\n" + `nm #{libFile} |grep 'ext'` + "\n" + 
+                 signature = Digest::MD5.hexdigest(haskell_str)
+                 functions = extract_function_names(haskell_str)
+                 unless functions.size > 0
+                   return
+                 end
+                 libName = "lib#{functions[0]}_#{signature}"; # unique signature
+
+                 dylib_suffix = case Config::CONFIG['target_os']
+                                when /darwin/
+                     "bundle"
+                                when /linux/
+                     "so"
+                                else
+                     "so" #take a punt
+                                end
+                 lib_file = SO_CACHE + "/" + libName + '.' + dylib_suffix
+
+
+                 file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
+                 # if the haskell libraries have changed out from under us, that's just too bad.
+                 # If we've changed details of this script, however, we probably want to rebuild,
+                 # just to be safe.
+                 if !File.exists?(lib_file) or File.mtime(__FILE__) >= File.mtime(lib_file)
+                   # so the hashing algorithm doesn't collide if we try building the same code
+                   # with jhc and ghc.
+                   #
+                   # argh, this isn't quite right. If we inline the same code but on a new ruby module
+                   # this won't create the new stubs. We want to be able to use new stubs but with the
+                   # old haskell lib. FIXME
+                   file.print("-- COMPILED WITH #{builder}\n")
+                   file.print(make_haskell_bindings(functions))
+                   file.print(haskell_str)
+                   file.flush
+
+                   modName = self.class  
+                   File.open("stubs.c", "w") {|io| io.write(make_stub(modName,libName, functions))}
+                   # and it all comes together
+
+                   build_result = builders[builder].call(lib_file, file.path, ['stubs.c','./lib/rshim.c'], build_options)
+                   # File.delete(file.path)    
+                 end
+                 begin
+                   require libName
+                   # raise LoadError
+                 rescue LoadError
+                   raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
+                       "\n" + $!.to_s + "\n" + `nm #{lib_file} |grep 'ext'` + "\n" + 
                        (build_result || "no build result?") + "\n"
-    end
+                 end
   end
-  
-  def ghcbuild(libFile, haskell_path, extra_c_src, options)
+
+  def ghcbuild(lib_file, haskell_path, extra_c_src, options)
     # this could be even less awful.
 
     command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} " +
      "-L/usr/local/lib/ghc-#{GHC_VERSION} " +
      "-no-hs-main " +
-      #     -L/Users/mwotton/projects/ghc \
+       #     -L/Users/mwotton/projects/ghc \
       "-optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} " +
-      # "-optl-Wl,-macosx_version_min,10.5 " +
-    "-o #{libFile} " +  extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
+     # "-optl-Wl,-macosx_version_min,10.5 " +
+    "-o #{lib_file} " +  extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
     if (not options[:no_strict])
       command += ' -Werror ' # bondage and discipline
     end
@@ -210,7 +210,7 @@ void Init_#{lib_name}() {
     return msg
   end
 
-  def jhcbuild(libFile, haskell_path, extra_c_src)
+  def jhcbuild(lib_file, haskell_path, extra_c_src)
     noisy("rm hs.out_code.c 2>/dev/null")
     # puts "building\n#{file.read}"
     success, msg = noisy("jhc  -dc #{haskell_path} -papplicative -ilib")
@@ -218,7 +218,7 @@ void Init_#{lib_name}() {
       raise HaskellError, "JHC build failed:\nsource\n" + `cat #{haskell_path}` + "\n#{msg}"
     end
     # puts msg
-   
+
     # output goes to hs_out.code.c
     # don't need to grep out main any more
     # we do need to grep out rshim.h, though. why? no one knows. better solution please
@@ -230,29 +230,29 @@ void Init_#{lib_name}() {
                 '-fPIC',
                 '-shared'
                 # '-lruby',
-                ]
+    ]
     mACFLAGS = [
                 '-undefined suppress',
                 '-flat_namespace'
-              ]
+    ]
     cPPFLAGS = [
                 '-D_GNU_SOURCE',
                 '-D_JHC_STANDALONE=0',
                 '-DNDEBUG'
-               ]
+    ]
     cFLAGS = ['-std=gnu99',
               '-falign-functions=4',
               '-ffast-math',
               '-Wshadow', '-Wextra', '-Wall', '-Wno-unused-parameter',
-              "-g -O3 -o #{libFile}"]
+              "-g -O3 -o #{lib_file}"]
     sRC = [
            './hs.out_code.c'
-          ] + extra_c_src
+    ] + extra_c_src
 
     mACiNCLUDES = ['-I/opt/local/include/ruby-1.9.1/', '-I./lib']
     iNCLUDES = ['-I/usr/local/include/ruby-1.9.1/', '-I./lib']
 
-    system "rm #{libFile} 2>/dev/null"
+    system "rm #{lib_file} 2>/dev/null"
 
     success, msg = noisy("gcc " + [cPPFLAGS, cFLAGS, lDFLAGS, iNCLUDES, sRC].join(" "))
     puts msg
