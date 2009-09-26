@@ -9,7 +9,7 @@ class HaskellError < RuntimeError
 end
 
 def ruby_header_dir
-# Possible config values for 1.8.6:
+  # Possible config values for 1.8.6:
   # archdir and topdir
   # For 1.9: rubyhdrdir
   Config::CONFIG['rubyhdrdir'] || Config::CONFIG['topdir'] 
@@ -33,9 +33,8 @@ EOF
     `#{candidate} --version | sed 's/^.*version *//'` >= '6.11' # yay, fragile
   }
 
-  if ghcs.empty?
-    raise HaskellError, "Can't find an appropriate ghc"
-  end
+  raise( HaskellError, "Can't find an appropriate ghc" )if ghcs.empty?
+
 
   #otherwise take the first
   GHC = ghcs[0]
@@ -142,58 +141,57 @@ void Init_#{lib_name}() {
     # """
     # this is a solved problem, guys. come ON. FIXME
 
-    builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) },
-                 "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
+    builders = { "jhc" => lambda { |x,y,z,a| jhcbuild(x,y,z,a) }, "ghc" => lambda { |x,y,z,a| ghcbuild(x,y,z,a) } }
 
-                 signature = Digest::MD5.hexdigest(haskell_str)
-                 functions = extract_function_names(haskell_str)
-                 unless functions.size > 0
-                   return
-                 end
-                 libName = "lib#{functions[0]}_#{signature}"; # unique signature
+    signature = Digest::MD5.hexdigest(haskell_str)
+    functions = extract_function_names(haskell_str)
+    unless functions.size > 0
+      return
+    end
+    libName = "lib#{functions[0]}_#{signature}"; # unique signature
 
-                 dylib_suffix = case Config::CONFIG['target_os']
-                                when /darwin/
+    dylib_suffix = case Config::CONFIG['target_os']
+                   when /darwin/
                      "bundle"
-                                when /linux/
+                   when /linux/
                      "so"
-                                else
+                   else
                      "so" #take a punt
-                                end
-                 lib_file = SO_CACHE + "/" + libName + '.' + dylib_suffix
+                   end
+    lib_file = SO_CACHE + "/" + libName + '.' + dylib_suffix
 
 
-                 file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
-                 # if the haskell libraries have changed out from under us, that's just too bad.
-                 # If we've changed details of this script, however, we probably want to rebuild,
-                 # just to be safe.
-                 if !File.exists?(lib_file) or File.mtime(__FILE__) >= File.mtime(lib_file)
-                   # so the hashing algorithm doesn't collide if we try building the same code
-                   # with jhc and ghc.
-                   #
-                   # argh, this isn't quite right. If we inline the same code but on a new ruby module
-                   # this won't create the new stubs. We want to be able to use new stubs but with the
-                   # old haskell lib. FIXME
-                   file.print("-- COMPILED WITH #{builder}\n")
-                   file.print(make_haskell_bindings(functions))
-                   file.print(haskell_str)
-                   file.flush
+    file = File.new(File.join(Dir.tmpdir, functions[0] + "_source.hs"), "w")
+    # if the haskell libraries have changed out from under us, that's just too bad.
+    # If we've changed details of this script, however, we probably want to rebuild,
+    # just to be safe.
+    if !File.exists?(lib_file) or File.mtime(__FILE__) >= File.mtime(lib_file)
+      # so the hashing algorithm doesn't collide if we try building the same code
+      # with jhc and ghc.
+      #
+      # argh, this isn't quite right. If we inline the same code but on a new ruby module
+      # this won't create the new stubs. We want to be able to use new stubs but with the
+      # old haskell lib. FIXME
+      file.print("-- COMPILED WITH #{builder}\n")
+      file.print(make_haskell_bindings(functions))
+      file.print(haskell_str)
+      file.flush
 
-                   modName = self.class  
-                   File.open("stubs.c", "w") {|io| io.write(make_stub(modName,libName, functions))}
-                   # and it all comes together
+      modName = self.class  
+      File.open("stubs.c", "w") {|io| io.write(make_stub(modName,libName, functions))}
+      # and it all comes together
 
-                   build_result = builders[builder].call(lib_file, file.path, ['stubs.c','./lib/rshim.c'], build_options)
-                   # File.delete(file.path)    
-                 end
-                 begin
-                   require libName
-                   # raise LoadError
-                 rescue LoadError
-                   raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
+      build_result = builders[builder].call(lib_file, file.path, ['stubs.c','./lib/rshim.c'], build_options)
+      # File.delete(file.path)    
+    end
+    begin
+      require libName
+      # raise LoadError
+    rescue LoadError
+      raise LoadError, "loading #{libName} failed, source was\n" + `cat #{file.path}` + 
                        "\n" + $!.to_s + "\n" + `nm #{lib_file} |grep 'ext'` + "\n" + 
                        (build_result || "no build result?") + "\n"
-                 end
+    end
   end
 
   def ghcbuild(lib_file, haskell_path, extra_c_src, options)
