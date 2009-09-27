@@ -1,6 +1,25 @@
 .jhci-hist
-# stupid emacs lock files
+stupid emacs lock files
 .#*
-# jhc stuff
+jhc stuff
 hs.out_code.c
 hs.out
+examples/simple_inline/RubyMap.hs
+
+examples/simple_inline/rshim.h
+examples/simple_inline/stubs.c
+examples/simple_inline/stubs.o
+examples/simple_rack_app/stubs.c
+examples/simple_rack_app/tmp.old/
+examples/simple_rack_app/tmp/
+pkg/
+RubyMap.hi
+RubyMap.hs
+RubyMap.o
+lib/RubyMap.chi
+lib/RubyMap.chs.h
+lib/RubyMap.hi
+lib/RubyMap.hs
+lib/RubyMap.o
+lib/rshim.o
+

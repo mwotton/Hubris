@@ -5,6 +5,8 @@ README.markdown
 Rakefile
 bin/jhc_builder
 bin/ghc_builder
+bin-scripts/jhc_builder
+bin-scripts/ghc_builder
 lib/hubris.rb
 lib/rshim.c
 lib/rshim.h

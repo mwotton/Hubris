@@ -23,21 +23,24 @@ module Hubris
   $:.push(SO_CACHE)
   # more grungy shell hacking to find an appropriate GHC
   # arguably should be done at install...
-  ghc_cmd =<<'EOF'
-find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'
-EOF
-  res = `#{ghc_cmd}`
-  #puts res
-  ghcs = res.split.select { |candidate|
-    # puts candidate
+
+  if ENV['HUBRIS_GHC']
+    ghcs  = [ENV['HUBRIS_GHC'] ]
+  else
+    ghc_cmd = " find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'"
+    res = `#{ghc_cmd}`
+    #puts res
+    ghcs = res.split.select { |candidate|
+      # puts candidate
     `#{candidate} --version | sed 's/^.*version *//'` >= '6.11' # yay, fragile
-  }
+    }
+
+  end
 
   raise( HaskellError, "Can't find an appropriate ghc" )if ghcs.empty?
 
-
   #otherwise take the first
-  GHC = ghcs[0]
+  GHC = ghcs.first
   GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
   GHC_VERSION = $1
   RubyHeader = ruby_header_dir or
@@ -180,8 +183,8 @@ void Init_#{lib_name}() {
       mod_name = self.class  
       write_hs_file( file_path, haskell_str, functions, mod_name, lib_name )
       File.open("stubs.c", "w") {|io| io.write(make_stub(mod_name, lib_name, functions))}
-     # and it all comes together
-     build_result = builders[builder].call(lib_file, file_path , ['stubs.c', base_lib_dir + '/rshim.c'], build_options)
+      # and it all comes together
+      build_result = builders[builder].call(lib_file, file_path , ['stubs.c', base_lib_dir + '/rshim.c'], build_options)
 
     end
 
@@ -210,13 +213,21 @@ void Init_#{lib_name}() {
     end
   end
 
+  # This is obviously weak, but there are many ways people may have various GHC installations,
+  # and the previous assumptions were also bad.  Need to decide if a) code should be super clever and
+  # detect this sort of thing, or b) user should just set config values someplace.  Or c) some hybrid.
+  # James likes (b).
+  def ghc_build_path
+    ENV['HUBRIS_GHC_BUILD_PATH'] || '/usr/local'
+  end
+
   def ghcbuild(lib_file, haskell_path, extra_c_src, options)
     # this could be even less awful.
     command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} " +
-     "-L/usr/local/lib/ghc-#{GHC_VERSION} " +
+     "-L#{ghc_build_path}/lib/ghc-#{GHC_VERSION} " +
      "-no-hs-main " +
        #     -L/Users/mwotton/projects/ghc \
-      "-optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} " +
+      "-optl-Wl,-rpath,#{ghc_build_path}/lib/ghc-#{GHC_VERSION} " +
      # "-optl-Wl,-macosx_version_min,10.5 " +
     "-o #{lib_file} " +  extra_c_src.join(' ') +  ' ' + base_lib_dir + '/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
     if (not options[:no_strict])
@@ -269,6 +280,7 @@ void Init_#{lib_name}() {
            './hs.out_code.c'
     ] + extra_c_src
 
+    #   Seriously wrong. FIXME
     mACiNCLUDES = ['-I/opt/local/include/ruby-1.9.1/', '-I./lib']
     iNCLUDES = ['-I/usr/local/include/ruby-1.9.1/', '-I./lib']
 

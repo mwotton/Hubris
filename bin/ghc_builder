@@ -1,25 +1,2 @@
-#!/bin/sh
-
-# $1 is our source haskell
-rm -rf tmp.old
-mv tmp tmp.old
-mkdir tmp
-tmp="tmp/$1"
-cat $1 >> $tmp
-echo "main :: IO ()" >> $tmp
-echo "main = return ()"  >> $tmp
-
-cd tmp
-jhc -dc "$1"
-sed -i 's/^main(/disregard_main(/' hs.out_code.c
-
-# for linux
-gcc '-std=gnu99' -D_GNU_SOURCE '-falign-functions=4' -ffast-math\
- -Wshadow -Wextra -Wall -Wno-unused-parameter -o libdynhs.so\
- hs.out_code.c -DNDEBUG -O3 -fPIC -shared '-D_JHC_STANDALONE=0' 
- for mac
-#gcc '-std=gnu99' -D_GNU_SOURCE '-falign-functions=4' -ffast-math\
-# -Wshadow -Wextra -Wall -Wno-unused-parameter -o libdynhs.so\
-# hs.out_code.c -DNDEBUG -O3 -fPIC -shared '-D_JHC_STANDALONE=0'  -dynamiclib
-#mv libdynhs.so ..
-
+here = File.expand_path(File.dirname(__FILE__))
+exec "sh #{here}/../bin-scripts/ghc_builder #{ARGV[0]}"
