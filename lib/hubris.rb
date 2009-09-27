@@ -131,11 +131,11 @@ void Init_#{lib_name}() {
   def dylib_suffix
     case Config::CONFIG['target_os']
     when /darwin/
-                     "bundle"
+       "bundle"
     when /linux/
-                     "so"
+       "so"
     else
-                     "so" #take a punt
+       "so" #take a punt
     end
   end
 
@@ -188,28 +188,25 @@ void Init_#{lib_name}() {
                        "\n" + $!.to_s + "\n" + `nm #{lib_file} |grep 'ext'` + "\n" + 
                        (build_result || "no build result?") + "\n"
     end
-
   end
 
   def write_hs_file file_path, haskell_str, functions, mod_name, lib_name
-      File.open( file_path , "w") do |file|
-        # so the hashing algorithm doesn't collide if we try building the same code
-        # with jhc and ghc.
-        #
-        # argh, this isn't quite right. If we inline the same code but on a new ruby module
-        # this won't create the new stubs. We want to be able to use new stubs but with the
-        # old haskell lib. FIXME
-        file.print("-- COMPILED WITH #{builder}\n")
-        file.print(make_haskell_bindings(functions))
-        file.print(haskell_str)
-        file.flush
-       end
-      
+    File.open( file_path , "w") do |file|
+      # so the hashing algorithm doesn't collide if we try building the same code
+      # with jhc and ghc.
+      #
+      # argh, this isn't quite right. If we inline the same code but on a new ruby module
+      # this won't create the new stubs. We want to be able to use new stubs but with the
+      # old haskell lib. FIXME
+      file.print("-- COMPILED WITH #{builder}\n")
+      file.print(make_haskell_bindings(functions))
+      file.print(haskell_str)
+      file.flush
+    end
   end
 
   def ghcbuild(lib_file, haskell_path, extra_c_src, options)
     # this could be even less awful.
-
     command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} " +
      "-L/usr/local/lib/ghc-#{GHC_VERSION} " +
      "-no-hs-main " +
