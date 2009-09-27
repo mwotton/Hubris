@@ -22,4 +22,5 @@ lib/RubyMap.hi
 lib/RubyMap.hs
 lib/RubyMap.o
 lib/rshim.o
-
+sample/tmp
+sample/tmp.old
