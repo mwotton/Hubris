@@ -144,6 +144,11 @@ void Init_#{lib_name}() {
     'ghc'
   end
 
+
+  def base_lib_dir
+    File.expand_path( File.dirname(__FILE__))
+  end
+
   def inline(haskell_str, build_options={ })
     # this is a bit crap. You wouldn't have to specify the args in an FP language :/
     # should probably switch out to a couple of single-method classes
@@ -176,7 +181,7 @@ void Init_#{lib_name}() {
       write_hs_file( file_path, haskell_str, functions, mod_name, lib_name )
       File.open("stubs.c", "w") {|io| io.write(make_stub(mod_name, lib_name, functions))}
      # and it all comes together
-     build_result = builders[builder].call(lib_file, file_path , ['stubs.c','./lib/rshim.c'], build_options)
+     build_result = builders[builder].call(lib_file, file_path , ['stubs.c', base_lib_dir + '/rshim.c'], build_options)
 
     end
 
@@ -213,7 +218,7 @@ void Init_#{lib_name}() {
        #     -L/Users/mwotton/projects/ghc \
       "-optl-Wl,-rpath,/usr/local/lib/ghc-#{GHC_VERSION} " +
      # "-optl-Wl,-macosx_version_min,10.5 " +
-    "-o #{lib_file} " +  extra_c_src.join(' ') + ' ./lib/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
+    "-o #{lib_file} " +  extra_c_src.join(' ') +  ' ' + base_lib_dir + '/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
     if (not options[:no_strict])
       command += ' -Werror ' # bondage and discipline
     end
