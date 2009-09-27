@@ -4,6 +4,7 @@ PostInstall.txt
 README.markdown
 Rakefile
 bin/jhc_builder
+bin/ghc_builder
 lib/hubris.rb
 lib/rshim.c
 lib/rshim.h
