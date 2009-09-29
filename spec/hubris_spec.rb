@@ -225,16 +225,18 @@ describe "Target" do
     # create a bunch of ruby threads which all call a given Haskell function
     # repeatedly. Checks that we get the right result, and that we don't crash.
     t = Target.new
-    threads = 100
+    no_threads = 10
     reps=1000
-    t.inline("sumInts n = sum $ [0..n]")
-    res = (0..threads).each { |n| (0..n).sum }
+    t.inline("sumInts (T_FIXNUM n) = T_FIXNUM $ sum [0..n]", :no_strict => true)
+    res = (0..no_threads).map { |n| (0..n).inject { |sum,n| sum+n } }
+    threads = []
     lambda {
-      (0..threads).each { |n|
-        Thread.start(n) { |x|
-          reps.times {  t.sumInts(x).should eql(res[x]) }
+      (0..no_threads).each { |n|
+        threads << Thread.start(n) { |x|
+          reps.times { t.sumInts(x).should eql(res[x]) }
         }
       }
+      threads.each { |t| t.join }
     }.should_not raise_error
   end
 end
