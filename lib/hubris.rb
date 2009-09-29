@@ -24,16 +24,8 @@ module Hubris
   $:.push(SO_CACHE)
 
   def Hubris::find_suitable_ghc()
-    # more grungy shell hacking to find an appropriate GHC
     # if HUBRIS_GHC is specified, don't try anything else.
-#    require 'find'
-#    Find.find(*(ENV['PATH'].split(/:/))) { |path| path =~ /ghc(-[0-9\.]*)/ }
-    require 'file/find'
     ghcs = ENV['HUBRIS_GHC'] ||  Dir.glob(ENV['PATH'].split(':').map {|p| p + "/ghc*" }).select {|x| x =~ /\/ghc(-[0-9\.]*)?$/}
-
-    # puts ghcs.to_s
-                                          # `"find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc(\-[0-9\.]*)'"`
-
     ghcs = ghcs.each { |candidate|
       version = `#{candidate} --numeric-version`.chomp
       return [candidate, version] if version >= '6.11' 
@@ -141,11 +133,9 @@ void Init_#{lib_name}() {
     end
   end
 
-
   def builder
     'ghc'
   end
-
 
   def base_lib_dir
     File.expand_path( File.dirname(__FILE__))
@@ -222,6 +212,7 @@ void Init_#{lib_name}() {
 
   def ghcbuild(lib_file, haskell_path, extra_c_src, options)
     # this could be even less awful.
+    # ghc-paths fixes this
     command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} " +
      "-L#{ghc_build_path}/lib/ghc-#{GHC_VERSION} " +
      "-no-hs-main " +
@@ -279,10 +270,7 @@ void Init_#{lib_name}() {
            './hs.out_code.c'
     ] + extra_c_src
 
-    #   Seriously wrong. FIXME
-    mACiNCLUDES = ['-I/opt/local/include/ruby-1.9.1/', '-I./lib']
-    iNCLUDES = ['-I/usr/local/include/ruby-1.9.1/', '-I./lib']
-
+    iNCLUDES = ["-I#{RubyHeader}", '-I./lib']
     system "rm #{lib_file} 2>/dev/null"
 
     success, msg = noisy("gcc " + [cPPFLAGS, cFLAGS, lDFLAGS, iNCLUDES, sRC].join(" "))
