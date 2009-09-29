@@ -3,6 +3,7 @@ require 'rubygems'
 require 'open4'
 require 'digest/md5'
 require 'rbconfig'
+# require 'libHaskell'
 # TODO delete old files
 
 class HaskellError < RuntimeError
@@ -21,30 +22,27 @@ module Hubris
 
   system('mkdir ' + SO_CACHE)
   $:.push(SO_CACHE)
-  # more grungy shell hacking to find an appropriate GHC
-  # arguably should be done at install...
 
-  if ENV['HUBRIS_GHC']
-    ghcs  = [ENV['HUBRIS_GHC'] ]
-  else
-    ghc_cmd = " find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc\(\-[0-9\.]*\)'"
-    res = `#{ghc_cmd}`
-    #puts res
-    ghcs = res.split.select { |candidate|
-      # puts candidate
-    `#{candidate} --version | sed 's/^.*version *//'` >= '6.11' # yay, fragile
+  def Hubris::find_suitable_ghc()
+    # more grungy shell hacking to find an appropriate GHC
+    # if HUBRIS_GHC is specified, don't try anything else.
+#    require 'find'
+#    Find.find(*(ENV['PATH'].split(/:/))) { |path| path =~ /ghc(-[0-9\.]*)/ }
+    require 'file/find'
+    ghcs = ENV['HUBRIS_GHC'] ||  Dir.glob(ENV['PATH'].split(':').map {|p| p + "/ghc*" }).select {|x| x =~ /\/ghc(-[0-9\.]*)?$/}
+
+    # puts ghcs.to_s
+                                          # `"find $(echo $PATH | sed -e 's/:/ /g') -regex '.*/ghc(\-[0-9\.]*)'"`
+
+    ghcs = ghcs.each { |candidate|
+      version = `#{candidate} --numeric-version`.chomp
+      return [candidate, version] if version >= '6.11' 
     }
-
+    raise(HaskellError, "Can't find an appropriate ghc: tried #{ghcs}")
   end
 
-  raise( HaskellError, "Can't find an appropriate ghc" )if ghcs.empty?
-
-  #otherwise take the first
-  GHC = ghcs.first
-  GHC =~ /ghc-(.*)/ # will fail horribly for plain ghc
-  GHC_VERSION = $1
-  RubyHeader = ruby_header_dir or
-  raise HaskellError, "Can't get rubyhdrdir"
+  GHC,GHC_VERSION = Hubris::find_suitable_ghc
+  RubyHeader = ruby_header_dir or raise HaskellError, "Can't get rubyhdrdir"
 
   # TODO add foreign export calls immediately for each toplevel func
   # cheap hacky way: first word on each line, nub it to get rid of
@@ -54,6 +52,8 @@ module Hubris
     functions = {}
     haskell_str.each_line do |line|
       # skkeeeeeeetchy. FIXME use haskell-src-exts or something more sensible here
+      # ok, so now we have ExtractHeaders. Can't really integrate it using Hubris,
+      # for obvious reasons, but we can build an extension
       if /^[^ \-{].*/ =~ line
         functions[line.split(/ /)[0]] = 1
       end
@@ -119,7 +119,6 @@ void Init_#{lib_name}() {
       # FIXME add the stg roots as well
       #  loaderCode += "extern void __stginit_#{function_name}zuexternal(void);\n"
     end
-
 
     functions.each do |function_name|
       # FIXME this is the worng place to be binding methods. Can we bind a bare C method in Ruby
