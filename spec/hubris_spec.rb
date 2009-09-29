@@ -125,11 +125,6 @@ EOF
 #   end
 
 end
-load File.dirname(__FILE__) + '/spec_helper.rb'
-
-class Target
-  include Hubris
-end
 
 class Target2
   include Hubris
@@ -155,6 +150,11 @@ describe "Target" do
   #  silently ignore the attempt (current behaviour)
   #  (actually, sometimes you get the old one, sometimes you get the new one. SPOOKY.
   #  ... ?
+  #
+  #  clearly, once I separate function binding from actual haskell compilation, this
+  #  problem goes away. Overwriting becomes the sane default, and the old haskell
+  #  just stops being referenced, so no linker name problems.
+  
   it "can overwrite old functions" do
     pending "Haven't decided proper semantics"
 
@@ -212,5 +212,29 @@ describe "Target" do
     t.inline("fun _ = T_NIL")
     lambda{ e.fun(10)}.should raise_error(NoMethodError)
   end
+
+  it "behaves memory-wise" do
+    # so, how on earth do we do this? Conceptually, we want to bind a function,
+    # call it many times, and assert that memory use is (eventually) constant
+    # possible approaches
+    #   - caveman: ps, grep etc.
+    #   - galois style (is that haskell-dtrace?)
+  end
   
+  it "behaves concurrently" do
+    # create a bunch of ruby threads which all call a given Haskell function
+    # repeatedly. Checks that we get the right result, and that we don't crash.
+    t = Target.new
+    threads = 100
+    reps=1000
+    t.inline("sumInts n = sum $ [0..n]")
+    res = (0..threads).each { |n| (0..n).sum }
+    lambda {
+      (0..threads).each { |n|
+        Thread.start(n) { |x|
+          reps.times {  t.sumInts(x).should eql(res[x]) }
+        }
+      }
+    }.should_not raise_error
+  end
 end
