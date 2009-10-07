@@ -16,8 +16,6 @@ class Target
 end
 
 Signal.trap("INT", 'EXIT');
-            
-         #    ) { exit(1); raise SyntaxError, "eep, everything died" }
 
 describe "Target" do
    it "whines like a little baby when you pass it bad haskell" do
