@@ -52,3 +52,18 @@ module Hubris
     end
   end
 end
+
+
+# alternative
+
+Hubris.import :package => "containers", :module => "Data.Map"
+
+module MyRubyModule
+  include Hubris::Data::Map
+end
+
+# alternative2
+
+module MyRubyModule
+  hubris :package => "containers", :module => "Data.Map"
+end
