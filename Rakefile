@@ -23,11 +23,11 @@ end
 # Dir['tasks/**/*.rake'].each { |t| load t }
 
 
-file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
-  str = "c2hs -v --cppopts='-I" + Hubris::RubyHeader + "' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
-  # print str
-  system(str)
-end
+#file "lib/RubyMap.hs" => ["lib/RubyMap.chs"] do
+#  str = "c2hs -v --cppopts='-I" + Hubris::RubyHeader + "' --cpp=gcc --cppopts=-E --cppopts=-xc lib/RubyMap.chs"
+#  # print str
+#  system(str)
+#end
 
 require 'spec'
 require 'spec/rake/spectask'
@@ -41,8 +41,8 @@ require 'spec/rake/spectask'
 task :spec => ["lib/RubyMap.hs"]
 
 task :clean do
-  FileList[File.expand_path("~/.hubris_cache/*"), 'lib/*.hi', 'lib/*.ho', 'lib/RubyMap.chs.h', 'lib/RubyMap.chi','lib/RubyMap.hs', 
-           'hs.out', 'stubs.c.*', 'hs.out_code*', 'rshim.c*', 'lib*.so', 'lib/*.o', 'libfoo_*.bundle', 'lib/hs.out_code.c' ].each do |f|
+  FileList[File.expand_path("~/.hubris_cache/*"),
+           'lib*.so', 'lib/*.o', 'libfoo_*.bundle' ].each do |f|
     begin
         File.delete(f)
     rescue

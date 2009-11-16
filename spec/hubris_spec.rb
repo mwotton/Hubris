@@ -1,5 +1,7 @@
 load File.dirname(__FILE__) + '/spec_helper.rb'
 
+Hubris.add_packages %w(base bytestring)
+
 # # just want to check it's actually possible to load a library dynamically
 # describe "dlload" do
 #   it "actually builds and loads a C level dylib stupidly" do
@@ -8,7 +10,7 @@ load File.dirname(__FILE__) + '/spec_helper.rb'
 #   end
 # end
 
-class Target
+module Target
   include Hubris
   def foo_local
     14
@@ -18,9 +20,9 @@ end
 Signal.trap("INT", 'EXIT');
 
 describe "Target" do
-   it "whines like a little baby when you pass it bad haskell" do
-    t = Target.new
-    lambda{ t.inline("broken _ = (1 + \"a string\")")}.should raise_error(HaskellError)
+  it "whines like a little baby when you pass it bad haskell" do
+    # t = Target.new
+    lambda{ module Foo; hubris :inline => "broken _ = (1 + \"a string\")"; end}.should raise_error(HaskellError)
   end
 
   it "ignores a comment" do
@@ -30,8 +32,9 @@ describe "Target" do
   end
 
   it "sings like a golden bird when you treat it right, aw yeah" do
-    t = Target.new
-    lambda { t.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
+#    t = Target.new
+#    lambda { t.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
+    lambda { Target.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
   end
 
 

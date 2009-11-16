@@ -19,11 +19,17 @@ end
 module Hubris
   VERSION = '0.0.2'
   SO_CACHE = File.expand_path("~/.hubris_cache")
-
+  
   system('mkdir ' + SO_CACHE)
   $:.push(SO_CACHE)
 
-  def Hubris::find_suitable_ghc()
+  @packages = []
+  def self.add_packages(packages)
+    @packages.concat packages
+  end
+  
+  
+  def self.find_suitable_ghc()
     # if HUBRIS_GHC is specified, don't try anything else.
     ghcs = ENV['HUBRIS_GHC'] ||  Dir.glob(ENV['PATH'].split(':').map {|p| p + "/ghc*" }).select {|x| x =~ /\/ghc(-[0-9\.]*)?$/}
     ghcs = ghcs.each { |candidate|
@@ -40,7 +46,7 @@ module Hubris
   # cheap hacky way: first word on each line, nub it to get rid of
   # function types.
   # tricky bit: generating interface for each
-  def extract_function_names(haskell_str)
+  def self.extract_function_names(haskell_str)
     functions = {}
     haskell_str.each_line do |line|
       # skkeeeeeeetchy. FIXME use haskell-src-exts or something more sensible here
@@ -53,11 +59,11 @@ module Hubris
     functions.keys
   end
 
-  def make_haskell_bindings(functions)
+  def self.make_haskell_bindings(functions)
     prelude =<<-EOF
 {-# LANGUAGE ScopedTypeVariables, FlexibleInstances, ForeignFunctionInterface, UndecidableInstances #-}
 -- import Foreign.Ptr()
-import RubyMap
+import Language.Ruby.Hubris
 import Prelude hiding (catch)
 import Control.Exception(SomeException, evaluate, catch)
 import Foreign(unsafePerformIO)
@@ -82,13 +88,16 @@ foreign export ccall "#{fname}_external" #{fname}_external :: Value -> Value -> 
     return prelude + bindings
   end
 
-  def trans_name(func)
+  def self.trans_name(func)
     func.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zd').gsub(/_/,'zu').gsub(/'/, 'zq') 
   end
 
-  def base_loader_code mod_name, lib_name
+  def self.base_loader_code mod_name, lib_name
     %~/* so, here's the story. We have the functions, and we need to expose them to Ruby */
-#include "rshim.h"
+/* this is about as filthy as it looks, but gcc chokes otherwise, with a redefinition error. */
+#define HAVE_STRUCT_TIMESPEC 1 
+#include <stdio.h>
+#include "ruby.h"
 VALUE #{mod_name} = Qnil;
 extern void hs_init(int * argc, char ** argv[]);
 
@@ -97,13 +106,18 @@ void Init_#{lib_name}() {
     // this needs to be allocated on the heap or we get a segfault
     char ** argv = malloc(sizeof(char**) * 1);
     argv[0]="haskell_extension";
+//    printf("initialising #{lib_name}\\n");
+
     hs_init(&argc, &argv);
+   // printf("initialised #{lib_name}\\n");
     #{mod_name} = rb_define_class("#{mod_name}", rb_cObject);
+   // printf("defined classes for #{lib_name}\\n");
     ~
 
+      # class Module; def hubris; self.class_eval { def self.h;"hubrified!";end };end;end
   end
 
-  def make_stub(mod_name, lib_name, functions)
+  def self.make_stub(mod_name, lib_name, functions)
     loader_code = base_loader_code(mod_name, lib_name)
 
     functions.each do |function_name|
@@ -115,14 +129,15 @@ void Init_#{lib_name}() {
     functions.each do |function_name|
       # FIXME this is the worng place to be binding methods. Can we bind a bare C method in Ruby
       # instead?
-      loader_code += "rb_define_method(#{mod_name},\"#{function_name}\",#{function_name}_external, 1);\n"
+#      loader_code += "rb_define_method(#{mod_name},\"#{function_name}\",#{function_name}_external, 1);\n"
+      loader_code += "rb_define_singleton_method(#{mod_name},\"#{function_name}\",#{function_name}_external, 1);\n"
       # FIXME this is needed for GHC
       # loader_code += "hs_add_root(__stginit_#{trans_name(function_name + '_external')});\n"
     end
     return loader_code + "}\n"
   end
 
-  def dylib_suffix
+  def self.dylib_suffix
     case Config::CONFIG['target_os']
     when /darwin/
        "bundle"
@@ -133,16 +148,35 @@ void Init_#{lib_name}() {
     end
   end
 
-  def builder
+  def self.builder
     'ghc'
   end
 
-  def base_lib_dir
+  def self.base_lib_dir
     File.expand_path( File.dirname(__FILE__))
   end
 
-  def inline(haskell_str, build_options={ })
-    # this is a bit crap. You wouldn't have to specify the args in an FP language :/
+  # load the new functions into target_module
+  def self.hubris(target_module, opts = { })
+    
+    options = { :no_strict => false }.merge opts
+    if options.keys.select{ |x| x==:source || x==:module || x==:inline }.count != 1
+      raise "Bad call - needs exactly one of :source, :module or :inline defined in hubris call"
+    end
+    if opt[:inline]
+      # put the code in a temporary file, set opt[:source]
+    end
+    if opt[:source]
+      # find the code, compile into haskell module in namespace, set 
+    end
+
+    if opt[:module]
+      # search the loaded module for compatible signatures
+      # bind them all into target_module
+    else
+      raise "code error, should never happen"
+    end
+    # this is a bit crap. You wouldn't have to specify the args in an FP language :/ 
     # should probably switch out to a couple of single-method classes
     # argh
     # """
@@ -160,6 +194,7 @@ void Init_#{lib_name}() {
 
     return unless functions.size > 0
 
+    
     lib_name = "lib#{functions[0]}_#{signature}"; # unique signature
     lib_file = SO_CACHE + "/" + lib_name + '.' + dylib_suffix
     file_path = File.join(Dir.tmpdir, functions[0] + "_source.hs")
@@ -168,17 +203,22 @@ void Init_#{lib_name}() {
     # if the haskell libraries have changed out from under us, that's just too bad.
     # If we've changed details of this script, however, we probably want to rebuild,
     # just to be safe.
-    if !File.exists?(lib_file) or File.mtime(__FILE__) >= File.mtime(lib_file)
+    if !File.exists?(lib_file) or File.mtime(__FILE__) >= File.mtime(lib_file) # or ENV['HUBRIS_ALWAYS_REBUILD']
       mod_name = self.class  
       write_hs_file( file_path, haskell_str, functions, mod_name, lib_name )
       File.open("stubs.c", "w") {|io| io.write(make_stub(mod_name, lib_name, functions))}
       # and it all comes together
-      build_result = builders[builder].call(lib_file, file_path , ['stubs.c', base_lib_dir + '/rshim.c'], build_options)
-
+#      build_result = builders[builder].call(lib_file, file_path , ['stubs.c', base_lib_dir + '/rshim.c'], build_options)
+      build_result = builders[builder].call(lib_file, file_path , ['stubs.c'],
+                                             # base_lib_dir + '/rshim.c'], 
+                                            build_options)
+      puts "built"
     end
 
     begin
+      puts "requiring #{lib_name}"
       require lib_name
+      puts "reqd"
       # raise LoadError
     rescue LoadError
       raise LoadError, "loading #{lib_name} failed, source was\n" + `cat #{file_path}` + 
@@ -213,21 +253,17 @@ void Init_#{lib_name}() {
   def ghcbuild(lib_file, haskell_path, extra_c_src, options)
     # this could be even less awful.
     # ghc-paths fixes this
-    command = "#{GHC} -Wall -v  --make -dynamic -fPIC -shared #{haskell_path} -lHSrts-ghc#{GHC_VERSION} " +
-     "-L#{ghc_build_path}/lib/ghc-#{GHC_VERSION} " +
+    command = "#{GHC} -Wall -package hubris --make -dynamic -fPIC -shared #{haskell_path} " +
+    " -lHSrts-ghc#{GHC_VERSION} " +
+    # "-L#{ghc_build_path}/lib/ghc-#{GHC_VERSION} " +
      "-no-hs-main " +
-       #     -L/Users/mwotton/projects/ghc \
-      "-optl-Wl,-rpath,#{ghc_build_path}/lib/ghc-#{GHC_VERSION} " +
-     # "-optl-Wl,-macosx_version_min,10.5 " +
-    "-o #{lib_file} " +  extra_c_src.join(' ') +  ' ' + base_lib_dir + '/RubyMap.hs -I' + Hubris::RubyHeader + ' -I./lib'
-    if (not options[:no_strict])
-      command += ' -Werror ' # bondage and discipline
-    end
+   #  "-optl-Wl,-rpath,#{ghc_build_path}/lib/ghc-#{GHC_VERSION} " +
+     "-o #{lib_file} " +  extra_c_src.join(' ') # -I  + Hubris::RubyHeader # + ' -I./lib'
+    command += ' -Werror ' unless options[:no_strict] # bondage and discipline
+    puts "\n|#{command}|\n"
     success,msg=noisy(command)
-    # puts [success,msg]
-    unless success
-      raise HaskellError, "ghc build failed " + msg + `cat #{haskell_path}`
-    end
+    # puts msg
+    raise HaskellError, "ghc build failed " + msg + `cat #{haskell_path}` unless success
     return msg
   end
 
@@ -235,11 +271,8 @@ void Init_#{lib_name}() {
     noisy("rm hs.out_code.c 2>/dev/null")
     # puts "building\n#{file.read}"
     success, msg = noisy("jhc  -dc #{haskell_path} -papplicative -ilib")
-    unless success || File.exists?("hs.out_code.c")
-      raise HaskellError, "JHC build failed:\nsource\n" + `cat #{haskell_path}` + "\n#{msg}"
-    end
-    # puts msg
-
+    raise HaskellError, "JHC build failed:\nsource\n" + `cat #{haskell_path}` + "\n#{msg}" unless success || File.exists?("hs.out_code.c")
+     
     # output goes to hs_out.code.c
     # don't need to grep out main any more
     # we do need to grep out rshim.h, though. why? no one knows. better solution please
@@ -283,7 +316,9 @@ end
 
 def noisy(str)
   pid, stdin, stdout, stderr = Open4.popen4 str
+  puts "waiting for #{pid}"
   ignored, status = Process.waitpid2 pid
+  puts "#{pid} done"
   if status == 0
     [true, str + "\n"]
   else
@@ -292,5 +327,14 @@ output: #{stdout.read}
 error:  #{stderr.read}
     EOF
     [false, str + "\n" + msg]
+  end
+end
+
+# this may be sketchy :)
+class Module
+  self.class_eval do
+    def hubris(options)
+      Hubris.hubris(self, options)
+    end
   end
 end
