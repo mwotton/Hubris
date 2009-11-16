@@ -28,3 +28,7 @@ double num2dbl(VALUE x) {
 unsigned int rb_ary_len(VALUE x) {
   return RARRAY_LEN(x);
 }
+
+VALUE keys(VALUE hash) {
+  rb_funcall(hash, rb_intern("keys"), 0);
+}

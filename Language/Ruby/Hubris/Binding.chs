@@ -1,5 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
--- {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE ForeignFunctionInterface, TypeSynonymInstances #-}
 
 {- TODO
 
@@ -10,10 +9,13 @@ Cabal, that leaves JHC out in the cold.
 
 perhaps need cabal file for ghc and equivalent for jhc.
 
+also: do we want to support different versions of ruby? for the moment, you just get
+whichever ruby.h is first in the search place.
+
 -}
 
 
-module RubyMap where
+module Language.Ruby.Hubris.Binding where
 #include "rshim.h"
 #include <ruby.h>
 
@@ -58,6 +60,7 @@ foreign import ccall unsafe "ruby.h rb_ary_push"    rb_ary_push    :: Value -> V
 foreign import ccall unsafe "ruby.h rb_float_new"   rb_float_new   :: Double -> Value
 foreign import ccall unsafe "ruby.h rb_big2str"     rb_big2str     :: Value -> Int -> Value
 foreign import ccall unsafe "ruby.h rb_str_to_inum" rb_str_to_inum :: Value -> Int -> Int -> Value
+foreign import ccall unsafe "ruby.h ruby_init" ruby_init :: IO ()
 
 -- we're being a bit filthy here - the interface is all macros, so we're digging in to find what it actually is
 foreign import ccall unsafe "rshim.h rb_ary_len" rb_ary_len :: Value -> CUInt
@@ -65,6 +68,7 @@ foreign import ccall unsafe "rshim.h rtype"      rtype      :: Value -> Int
 foreign import ccall unsafe "rshim.h int2fix"    int2fix    :: Int -> Value
 foreign import ccall unsafe "rshim.h fix2int"    fix2int    :: Value -> Int
 foreign import ccall unsafe "rshim.h num2dbl"    num2dbl    :: Value -> Double  -- technically CDoubles, but jhc promises they're the same
+foreign import ccall unsafe "rshim.h keys"       rb_keys    :: Value -> IO Value
 
 -- this line crashes jhc
 foreign import ccall unsafe "intern.h rb_ary_entry" rb_ary_entry :: Value -> CLong -> IO Value
@@ -72,6 +76,9 @@ foreign import ccall unsafe "intern.h rb_ary_entry" rb_ary_entry :: Value -> CLo
 foreign import ccall safe "ruby.h rb_raise" rb_raise :: Value -> CString -> IO ()
 foreign import ccall unsafe "ruby.h rb_eval_string" rb_eval_string :: CString -> Value
 
+foreign import ccall unsafe "intern.h rb_hash_aset" rb_hash_aset :: Value -> Value -> Value -> IO ()
+foreign import ccall unsafe "intern.h rb_hash_new" rb_hash_new :: IO Value
+foreign import ccall unsafe "intern.h rb_hash_aref" rb_hash_aref :: Value -> Value -> IO Value
 
 
 
@@ -83,7 +90,7 @@ data RValue = T_NIL
             -- to be an extraction step to pull the RValues out.
             | T_ARRAY [RValue]
             | T_FIXNUM Int 
-            | T_HASH  Int -- definitely FIXME - native ruby hashes, or going to transliterate into Data.Map?
+            | T_HASH  Value --  Int -- definitely FIXME - native ruby hashes, or going to transliterate into Data.Map?
             | T_BIGNUM Integer    
 
             -- technically, these are mapping over the types True and False,
@@ -92,7 +99,7 @@ data RValue = T_NIL
             | T_FALSE      
 
             | T_SYMBOL Word -- interned string
-
+              deriving (Eq, Show)
 -- These are the other basic Ruby structures that we're not handling yet.
 --          | T_REGEXP     
 --          | T_FILE
@@ -101,9 +108,9 @@ data RValue = T_NIL
 --          | T_OBJECT 
 --          | T_CLASS      
 --          | T_MODULE     
-
-toRuby :: RValue -> Value
-toRuby r = case r of
+-- leaky as hell
+fromRVal :: RValue -> Value
+fromRVal r = case r of
            T_FLOAT d -> rb_float_new d
            -- need to take the address of the cstr, just cast it to a value
            -- sadly no bytestrings yet - unpack it to a list. yeah it's ugly.
@@ -115,15 +122,16 @@ toRuby r = case r of
            T_TRUE     -> fromIntegral $ fromEnum RUBY_Qtrue
            T_FALSE    -> fromIntegral $ fromEnum RUBY_Qfalse
            T_NIL      -> fromIntegral $ fromEnum RUBY_Qnil
+           T_HASH h   -> h
            T_ARRAY l  -> unsafePerformIO $ do
                            ary <- rb_ary_new2 $ fromIntegral $ length l
-                           mapM_ (rb_ary_push ary . toRuby) l
+                           mapM_ (rb_ary_push ary . fromRVal) l
                            return ary
            T_BIGNUM b -> rb_str_to_inum (rb_str_new2 $ unsafePerformIO $ newCAString $ show b) 10 1
            _          -> error "sorry, haven't implemented that yet."
 
-fromRuby :: Value -> RValue
-fromRuby v = case target of
+fromVal :: Value -> RValue
+fromVal v = case target of
                RT_NIL -> T_NIL
                RT_FIXNUM -> T_FIXNUM $ fix2int v
                RT_STRING -> T_STRING $ unsafePerformIO $ peekCString $ rb_str2cstr v 0
@@ -131,14 +139,16 @@ fromRuby v = case target of
                RT_BIGNUM -> T_BIGNUM $ read  $ unsafePerformIO $ peekCString $ rb_str2cstr (rb_big2str v 10) 0
                RT_TRUE -> T_TRUE
                RT_FALSE -> T_FALSE
-               RT_ARRAY -> T_ARRAY $ map fromRuby $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
+               RT_HASH  -> T_HASH v
+               RT_ARRAY -> T_ARRAY $ map fromVal $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
 
-               _ -> error (show target)
+               _ -> error "didn't work" -- (show target)
       where target :: RubyType
             target = toEnum $ rtype v
 
--- utility stuff
 
+unsafeThrow :: String -> a
+unsafeThrow s = unsafePerformIO $ throwException s >> undefined
 throwException :: String -> IO Value
 throwException s = do he <- newCAString "HaskellError"
                       err <- newCAString s

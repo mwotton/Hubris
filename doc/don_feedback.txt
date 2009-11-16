@@ -1,0 +1,25 @@
+   ------------------------------------------------------------------------
+
+   Hubris
+    Ruby calling Haskell
+       - inline, dynamically compiled Haskell
+       - call precompiled stuff
+
+   Dream
+     Haskell to code would be Cabal package.
+       Ruby would be application.
+
+     FFI preprocessor:
+       Does Haskell foreign export
+       Generates marshalling boilerplate
+
+     Haskell code in Ruby
+
+   ------------------------------------------------------------------------
+
+   Grammar, parsing, type-driven.
+
+   Killer demo:
+       - Rails site,
+           - super clever/ fast/ multicore Haskell code
+

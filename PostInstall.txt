@@ -1,3 +1,0 @@
-For more information on Hubris, see http://github.com/mwotton/Hubris/tree/master
-
-You should now have a bin file named jhc_builder that you can use to compile Haskell files into .so files

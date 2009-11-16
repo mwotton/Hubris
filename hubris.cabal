@@ -1,0 +1,46 @@
+Name:                hubris
+Version:             0.0.1
+Author:              Mark Wotton
+Maintainer:          mwotton@gmail.com
+Build-Type:          Simple
+Cabal-Version:       >=1.2
+License:        OtherLicense
+License-File:   LICENSE
+Build-Type:     Simple
+Author:         Mark Wotton <mwotton@gmail.com>
+Maintainer:     Mark Wotton <mwotton@gmail.com>
+bug-reports:    mailto:mwotton@gmail.com
+Category:       Language
+Stability:      Experimental
+extra-source-files: 
+Synopsis:       Support library for Hubris, the Ruby <=> Haskell bridge
+Description:    Support library for Hubris, the Ruby <=> Haskell bridge
+
+Library
+-- the ordering is critical, because Cabal doesn't do dependency analysis.
+        Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild
+-- so this is a really filthy hack.
+        c-sources: cbits/rshim.c 
+        includes:  cbits/rshim.h
+        install-includes:  cbits/rshim.h
+
+-- a proper fix for this would involve autoconf and I'm not feeling up to it.
+        include-dirs: cbits /opt/local/include/ruby-1.9.1/ 
+        extra-lib-dirs: /opt/local/lib
+       -- c2hsoptions: --cpp=gcc --cppopts=-E --cppopts=-xc
+        extra-libraries: ruby
+        build-depends:  ghc, Cabal>=1.7.4 && < 1.8, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, haskell-src-meta, hint
+
+Executable Hubrify
+  Main-is:           Hubrify.hs
+  Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 1.8, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, haskell-src-meta, hint
+  Other-Modules:     Language.Ruby.Hubris.Binding
+  c-sources: cbits/rshim.c 
+  include-dirs: cbits /opt/local/include/ruby-1.9.1/ 
+  extra-lib-dirs: /opt/local/lib
+  extra-libraries: ruby
+  -- This is bad form, apparently, and if i include it, ./Setup dist cries big fat tears,
+  --  but you _really_ want a dynamic lib with Hubrify, or you'll get a truly
+  -- huge binary (may not even link, I had problems with the iconv dependency from HSbase)
+  -- anyway, pass "--ghc-options=-dynamic" to ./Setup build, and you should be apples.
+  -- ghc-options: -dynamic

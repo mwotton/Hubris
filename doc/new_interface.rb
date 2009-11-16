@@ -45,12 +45,13 @@ hubris :package => "mypackage", :module => "MyModule" [, :as => "MyModule"]
 hubris :module => "haskell/shit/MyModule"
 
 # simpler to implement option, allows more flexibility in Ruby land
-module Hubris
-  module Data
-    module Map
-      hubris :package => "containers", :module => "Data.Map"
-    end
-  end
+module MyRubyModule
+  # :packages is optional, just brings in external packages.
+  hubris :module => "Data.Map", :packages => ["containers","foo"]
+  # or
+  hubris :source => "MyHaskellCode.hs" # , :packages => [ ... ]
+  # or
+  hubris :inline => "foo x = x * 2"
 end
 
 
@@ -67,3 +68,7 @@ end
 module MyRubyModule
   hubris :package => "containers", :module => "Data.Map"
 end
+
+
+6:34:58 PM Josh Price: class Module; def hubris; self.class_eval { def self.h;"hubrified!";end };end;end
+6:35:10 PM Josh Price: class B;hubris;end
