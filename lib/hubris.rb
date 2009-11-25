@@ -51,7 +51,7 @@ module Hubris
       mod = "Inline_#{Digest::MD5.hexdigest(options[:inline] + build_args.to_s)}"
       filename = "/var/hubris/cache/#{Hubris.trans_name(mod)}.hs" 
       handle = File.open(filename, "w")
-      handle.write "module #{mod} where\n" + options[:inline]+"\n"
+      handle.write "module #{mod} where\nimport Language.Ruby.Hubris.Binding\n" + options[:inline]+"\n"
       handle.close
       build(filename, build_args)
     elsif options[:source]
@@ -76,7 +76,7 @@ module Hubris
     # print "module name is #{mod}\n"
     libFile = genLibFileName(mod)
     if !File.exists?(libFile) || @always_rebuild
-
+      # if Hubrify's not installed, we throw an exception. just as good as explicitly checking a flag.
       status,msg = Hubris.noisy("Hubrify #{mod} #{source} #{args.join(' ')}")
       if status.exitstatus != 0
         raise HaskellError.new("Couldn't compile the module, FIXME:\n#{msg + status.exitstatus.to_s}")
@@ -88,11 +88,14 @@ module Hubris
   def load(mod)
     # search path for modules?
     libFile = genLibFileName(mod)
+    if !File.exists?(libFile)
+      status,msg = Hubris.noisy("Hubrify #{mod}")
+      if status.exitstatus != 0
+        raise HaskellError.new("Couldn't find the module, FIXME:\n#{msg + status.exitstatus.to_s}")
+      end
+    end
     begin
-      #puts "requiring #{libFile}"
       require libFile
-      #puts "reqd"
-      # raise LoadError
     rescue LoadError
       raise HaskellError, "loading #{libFile} failed: " +
         "\n" + $!.to_s + "\n" + `nm #{libFile} 2>/dev/null` + "\n"

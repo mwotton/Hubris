@@ -106,21 +106,39 @@ end
 describe 'Arrays' do
   it "can use arrays sensibly" do
     class ArrayTest
-      hubris :inline => "mysum :: [Int] -> Int; mysum [] = 0; mysum (x:xs) = x + sum xs"
+      hubris :inline => "mylength :: [Value] -> Int; mylength [] = 0; mylength (_:xs) = 1 + mylength xs"
     end
     
-    ArrayTest.new.mysum([1,2,3,4]).should eql(10)
-    
-    it "returns a haskell list as  an array" do
-      class ArrayTest2
-        hubris :inline => "elts :: Int -> [Int]; elts i = take i [1..]"
-      end
-      t=ArrayTest2.new
-      t.elts(5).should eql([1,2,3,4,5])
-      t.elts("A Banana").should eql(nil)
-    end
+    ArrayTest.new.mylength([1,2,3,4]).should eql(4)
   end
+  it "returns a haskell list as  an array" do
+    class ArrayTest2
+      hubris :inline => "elts :: Int -> [Int]; elts i = take i [1..]"
+    end
+    t=ArrayTest2.new
+    t.elts(5).should eql([1,2,3,4,5])
+    lambda { t.elts("A Banana")}.should raise_error(HaskellError)
+  end
+  it "uses a Haskell array" do
+    class ArrayTest3
+      hubris :inline => "import Data.Array.IArray; larr :: Int -> Array Int Int; larr x = listArray (0,x-1) [1..x]"
+    end
+    ArrayTest3.new.larr(7).should == [1,2,3,4,5,6,7]
+  end
+end
 
+describe 'Hashes' do
+  it "can move a Haskell map to ruby" do
+    class HaskellMap
+      hubris :inline => "import Data.Map ; h :: Int -> Map Int Int; h n = Data.Map.fromList $ zip [1..n] [n, n-1 .. 1]"
+    end
+    rh=HaskellMap.new.h(3)
+    rh[3].should == 1
+    rh[2].should == 2
+    rh[1].should == 3
+    
+  end
+end
   #   it "handles hashes" do
   #     t=Target.new
   #     t.inline(<<EOF
@@ -131,7 +149,7 @@ describe 'Arrays' do
   #   end
 
 
-end
+
 describe "Target" do
   
   it "can be called in a block" do
@@ -228,8 +246,8 @@ end
 
 describe 'Realworld' do
   it "can handle the bytestring lib" do
-    system("rm /var/hubris/cache/Data.ByteString.bundle 2>/dev/null;
-Hubrify Data.ByteString 2>/dev/null >/dev/null")
+    # system("rm /var/hubris/cache/Data.ByteString.bundle 2>/dev/null;
+    # Hubrify Data.ByteString 2>/dev/null >/dev/null")
   
     # FIXME zencode module names properly
     class ByteString
@@ -249,6 +267,7 @@ describe 'Performance' do
 
   it "caches its output" do
     # only relevant for inlining
+    
     t=Target.new
     class First
       hubris :inline => "foobar::Int->Int; foobar a = a"
@@ -273,7 +292,7 @@ describe 'Performance' do
   it "behaves concurrently" do
     # create a bunch of ruby threads which all call a given Haskell function
     # repeatedly. Checks that we get the right result, and that we don't crash.
-    
+    pending "Don't wanna run this every time"
     no_threads = 10
     reps=1000
     class ConcTest
