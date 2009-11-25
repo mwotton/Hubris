@@ -8,14 +8,28 @@ import System.IO.Unsafe (unsafePerformIO)
 import Foreign.C.Types
 import Language.Ruby.Hubris.Binding
 import Control.Monad (forM)
+import Debug.Trace
+import Foreign.C.String
+import Data.ByteString
 -- type Value = CULong
+import System.IO.Unsafe
 
 
 
-wrap :: (Haskellable a, Rubyable b) => (a->b) -> (Value -> Value)
-wrap func ar = fromRVal $ case (toHaskell $ fromVal ar) of
-                Just a ->  toRuby $ func a
-                Nothing -> T_NIL
+wrap :: (Haskellable a, Show b, Rubyable b) => (a->b) -> (Value -> Value)
+wrap func ar = case (toHaskell ar) of
+                 Just a -> toRuby $ func a
+                 Nothing -> unsafePerformIO $ Prelude.putStrLn "exception:" >> createException "BLAh" --  fromRVal T_NIL  -- fixme - create an exception
+
+-- wrapshow :: (Haskellable a, Show b, Show a, Rubyable b) => (a->b) -> (Value -> Value)
+-- wrapshow func ar = trace "Wrap called" $ let rv = fromVal ar
+--                                          in trace (unlines ["raw:" ++ show ar,
+--                                                             "in:" ++ show rv]) $ fromRVal $ 
+--                                             case (toHaskell rv) of
+--                                             Just a ->  let v = func a in
+--                                                            trace("out" ++ show v) (toRuby v)
+--                                             Nothing -> T_NIL
+
 
 -- fromVal :: Value -> RValue
 -- fromRVal ::RValue -> Value
@@ -23,48 +37,60 @@ wrap func ar = fromRVal $ case (toHaskell $ fromVal ar) of
 -- fromRVal = undefined
 
 class Haskellable a where
-  toHaskell :: RValue -> Maybe a
+  toHaskell :: Value -> Maybe a
 
 class Rubyable a where
-  toRuby :: a -> RValue
+  toRuby :: a -> Value
 
 instance Haskellable Int where
-  toHaskell (T_FIXNUM i) = Just i
-  toHaskell _ = Nothing
+  toHaskell v = case rubyType v of
+                  RT_FIXNUM -> Just $ fix2int v
+                  _           -> Nothing
 
 instance Rubyable Int where
-  toRuby i = T_FIXNUM i
+  toRuby i = int2fix i
 
 instance Haskellable Integer where
-  toHaskell (T_BIGNUM i) = Just i
-  toHaskell _ = Nothing
+  toHaskell v = case rubyType v of
+                  RT_BIGNUM -> Just $ read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
+                  RT_FIXNUM -> Just $ fromIntegral $ fix2int v
+                  _         -> Nothing
 
 instance Rubyable Integer where
-  toRuby i = T_BIGNUM i
+  toRuby i = rb_str_to_inum (unsafePerformIO $ (newCAString $ show i) >>= rb_str_new2) 10 1
 
 instance Haskellable Bool where
-  toHaskell T_TRUE  = Just True
-  toHaskell T_FALSE = Just False
-  toHaskell _       = Nothing
+  toHaskell v = case rubyType v of
+                RT_TRUE  -> Just True
+                RT_FALSE -> Just False
+                _        -> Nothing
 
 instance Rubyable Bool where
-  toRuby True = T_TRUE
-  toRuby False = T_FALSE
+  toRuby True  = constToRuby RUBY_Qtrue
+  toRuby False = constToRuby RUBY_Qfalse
 
 instance Rubyable Double where
-  toRuby d = T_FLOAT d
+  toRuby d = rb_float_new d
 
 instance Haskellable Double where
-  toHaskell (T_FLOAT f)  = Just f
-  toHaskell (T_FIXNUM i) = Just $ fromIntegral i -- does this make sense?
-  toHaskell _ = Nothing 
+  toHaskell v = case rubyType v of
+                  RT_FLOAT  -> Just $ num2dbl v
+                  RT_FIXNUM -> Just $ fromIntegral $ fix2int v
+                  _         -> Nothing
+instance Haskellable ByteString where
+  toHaskell v = case rubyType v of
+                  RT_STRING -> Just $ unsafePerformIO $ str2cstr v >>= packCString
+                  _         -> Nothing
 
-instance Haskellable String where
-  toHaskell (T_STRING s) = Just s
-  toHaskell _ = Nothing
-instance Rubyable String where
-  toRuby s = (T_STRING s)
+instance Rubyable ByteString where
+  toRuby s = unsafePerformIO $ useAsCString s rb_str_new2
 
+
+-- instance Rubyable a => Rubyable [a] where
+--   toRuby _ = error "List of as"
+
+--instance Haskellable a => Haskellable [a] where
+--  toHaskell = fromVal $ unsafePerformIO $ createException "Haskellable to lists"
 
 -- This is a tricky case.
 -- The ruby FFI wants us to pass a C callback which it can apply to each key-value pair
@@ -96,9 +122,9 @@ instance Rubyable String where
                          
 --   toHaskell _ = Nothing
 
-instance (Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
-  toRuby s = unsafePerformIO $ 
-             do hash <- rb_hash_new
-                forM (toList s)
-                     (\(k,v) -> rb_hash_aset hash (fromRVal $ toRuby k) (fromRVal $ toRuby v))
-                return $ T_HASH hash
+-- instance (Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
+--   toRuby s = unsafePerformIO $ 
+--              do hash <- rb_hash_new
+--                 forM (toList s)
+--                      (\(k,v) -> rb_hash_aset hash (fromRVal $ toRuby k) (fromRVal $ toRuby v))
+--                 return $ T_HASH hash

@@ -33,7 +33,7 @@ Library
 
 Executable Hubrify
   Main-is:           Hubrify.hs
-  Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 1.8, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, haskell-src-meta, hint
+  Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 1.8, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, haskell-src-meta, hint, process
   Other-Modules:     Language.Ruby.Hubris.Binding
   c-sources: cbits/rshim.c 
   include-dirs: cbits /opt/local/include/ruby-1.9.1/ 
