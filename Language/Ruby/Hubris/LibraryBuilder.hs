@@ -35,7 +35,8 @@ generateLib libFile sources moduleName buildArgs = do
   s <- generateSource sources moduleName
   case s of
     Left s -> return $ Left ("HINT error: " ++ show s)
-    Right (c,mod) -> do
+    Right Nothing -> return $ Left("no functions found!")
+    Right (Just (c,mod)) -> do
        putStrLn mod
        putStrLn "C:"
        putStrLn c
@@ -49,12 +50,12 @@ generateLib libFile sources moduleName buildArgs = do
 
 generateSource :: [Filename] ->   -- optional haskell source to load into the interpreter
                    ModuleName ->   -- name of the module to build a wrapper for
-                   IO (Either InterpreterError (String,String))
+                   IO (Either InterpreterError (Maybe (String,String)))
 generateSource sources moduleName = runInterpreter $ do
          let zmoduleName = zenc moduleName
-         say $ show sources
+         -- say $ show sources
          loadModules sources
-         say "loaded"
+         -- say "loaded"
          -- setTopLevelModules [moduleName]
          setImportsQ $ map (\x->(x,Just x)) $ ("Language.Ruby.Hubris"):("Language.Ruby.Hubris.Binding"):moduleName:[]
 
@@ -66,71 +67,73 @@ generateSource sources moduleName = runInterpreter $ do
 
          exportable  <- filterM (\func -> do let rubyVal ="(fromIntegral $ fromEnum $ Language.Ruby.Hubris.Binding.RUBY_Qtrue)"
                                              let f = "Language.Ruby.Hubris.wrap " ++ moduleName ++"." ++func ++" " ++ rubyVal
-                                             say f
-                                             (typeOf f >>= \n -> say $ "type of wrap." ++ func ++ " is " ++ show n) 
-                                                  `catchError` (say . show)
+                                             -- say f
+                                             --    (typeOf f >>= \n -> say $ "type of wrap." ++ func ++ " is " ++ show n) 
+                                             --         `catchError` (say . show)
                                              typeChecks (f ++ "==" ++ rubyVal )) functions
-         let rubyName = "Hubris::Exports::" ++ zmoduleName
-         say $ "Exportable: " ++ (show exportable)
-         -- withTypes <- mapM  (\x ->  typeOf x >>= \t -> return (x,t)) exportable
-         -- ideally, all this stuff would be using something like the Interpolator module,
-         -- but haskell-src-meta is not going on 6.12 yet, so let's do it traditionally instead.
-         let hask = ["{-# LANGUAGE ForeignFunctionInterface, ScopedTypeVariables #-}", 
-                     "module Language.Ruby.Hubris.Exports." ++ moduleName ++ " where",
-                     "import Language.Ruby.Hubris",
-                     "import qualified Prelude as P()",
-                     "import Language.Ruby.Hubris.Binding",
---                     "import System.IO",
---                     "import Debug.Trace",
-                     "import qualified " ++ moduleName] ++
-                    -- really hubris_exports should be a guaranteed safe name - FIXME
-        --            ["hubris_exports = Language.Ruby.Hubris.wrap (\\ (_ :: Int) -> \"" ++ (concat $ intersperse "," exportable) ++ "\")",
-        --             "foreign export ccall \"exports\" hubris_exports :: Value -> Value" ] ++ 
-                    -- gah, this doesn't work - have to load haskell runtime first.
---                     ["dummy = putStrLn \"Loaded\" >> hs_init",
---                      "foreign export ccall \"Init_" ++ moduleName ++ "\" dummy :: IO ()"] ++ 
-                    [fun ++ " :: Value -> Value" | fun <- exportable ] ++
---                    [fun ++ " a b = trace  (unwords [show a,show b] ++ \"called " ++ fun ++ "\") (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  fun ++ ") b"| fun <- exportable ] ++ 
-                    [fun ++ " b = (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  fun ++ ") b"| fun <- exportable ] ++ 
-                    ["foreign export ccall \"hubrish_" ++  fun ++ "\" " ++ fun ++ " :: Value -> Value" | fun <- exportable ]
-         let c = ["#include <stdio.h>",
-                  "#include <stdlib.h>",
-                  "#define HAVE_STRUCT_TIMESPEC 1",
-                  "#include <ruby.h>"
 
-                  ] ++
-                --  ["char * exports[" ++(show $ length exportable + 1) ++ "] = {" ++ (concat $ intersperse "," $ map (\x -> "\"hubris_" ++ x ++ "\"") exportable) ++ "};"] ++
-                  map forwardDecl exportable ++
-                  map wrapper exportable ++
-                  ["extern void safe_hs_init();"
-                  ,"extern VALUE Exports;"
-                  ,"void Init_" ++ zmoduleName ++ "(){"
-                  ,"  printf(\"loading\\n\");"
-                  ,"  VALUE Fake = Qnil;"
-                  ,"  safe_hs_init();"
-                  ,"  Fake = rb_define_module_under(Exports, \"" ++ zmoduleName ++ "\");"
-                  --                  "Fake = rb_define_module(\"" ++ rubyName ++"\");",
-                  ,"  printf(\"defined module " ++ rubyName ++ ":%p\\n\", Fake);"
-                  ] ++ 
-                  map def exportable ++  ["}"]
-                      
-                      
+         say $ "Exportable: " ++ (show exportable)
+         return $ guard (not $ null exportable) >> return (genC exportable zmoduleName ,genHaskell exportable moduleName )                      
 --                          "char * HubrisExports[" ++(show $ length exportable + 1) ++ "] = {" ++ (concat $ intersperse "," $ map (\x -> "\"" ++ x ++ "\"") exportable) ++ "};",
                           
-         return (unlines c,unlines hask)
+genC :: [String] -> String -> String
+genC exportable zmoduleName= unlines $ 
+         ["#include <stdio.h>"
+          ,"#include <stdlib.h>"
+          ,"#define HAVE_STRUCT_TIMESPEC 1"
+          ,"#include <ruby.h>"
+          ,"#ifdef DEBUG"
+          ,"#define eprintf printf"
+          ,"#else"
+          ,"int eprintf(const char *f, ...){}"
+          ,"#endif"
+         ] ++
+         map forwardDecl exportable ++
+         map wrapper exportable ++
+         ["extern void safe_hs_init();"
+         ,"extern VALUE Exports;"
+         ,"void Init_" ++ zmoduleName ++ "(){"
+         ,"  eprintf(\"loading\\n\");"
+         ,"  VALUE Fake = Qnil;"
+         ,"  safe_hs_init();"
+         ,"  Fake = rb_define_module_under(Exports, \"" ++ zmoduleName ++ "\");"
+         --                  "Fake = rb_define_module(\"" ++ rubyName ++"\");",
+         ,"  eprintf(\"defined module " ++ rubyName ++ ":%p\\n\", Fake);"
+         ] ++ map def exportable ++  ["}"]
+  where rubyName = "Hubris::Exports::" ++ zmoduleName
+
+genHaskell exportable moduleName = unlines $ 
+                             ["{-# LANGUAGE ForeignFunctionInterface, ScopedTypeVariables #-}", 
+                              "module Language.Ruby.Hubris.Exports." ++ moduleName ++ " where",
+                              "import Language.Ruby.Hubris",
+                              "import qualified Prelude as P()",
+                              "import Language.Ruby.Hubris.Binding",
+                              --                     "import System.IO",
+                                 --                     "import Debug.Trace",
+                              "import qualified " ++ moduleName] ++
+                              -- really hubris_exports should be a guaranteed safe name - FIXME
+                                 --            ["hubris_exports = Language.Ruby.Hubris.wrap (\\ (_ :: Int) -> \"" ++ (concat $ intersperse "," exportable) ++ "\")",
+        --             "foreign export ccall \"exports\" hubris_exports :: Value -> Value" ] ++ 
+                    -- gah, this doesn't work - have to load haskell runtime first. 
+--                     ["dummy = putStrLn \"Loaded\" >> hs_init",
+--                      "foreign export ccall \"Init_" ++ moduleName ++ "\" dummy :: IO ()"] ++ 
+                             [fun ++ " :: Value -> Value" | fun <- exportable ] ++
+--                    [fun ++ " a b = trace  (unwords [show a,show b] ++ \"called " ++ fun ++ "\") (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  fun ++ ") b"| fun <- exportable ] ++ 
+                             [fun ++ " b = (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  fun ++ ") b"| fun <- exportable ] ++ 
+                             ["foreign export ccall \"hubrish_" ++  fun ++ "\" " ++ fun ++ " :: Value -> Value" | fun <- exportable ]
 
 say = liftIO . putStrLn
 
 wrapper :: String -> String
 wrapper f = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
---                              ,"  printf(\""++f++" has been called\\n\");"
+--                              ,"  eprintf(\""++f++" has been called\\n\");"
                               ,"  VALUE res = hubrish_" ++ f ++"(v);"
                               ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
-                              ,"    printf(\"exception\");"
+                              ,"    eprintf(\"exception\");"
                               ,"    rb_exc_raise(res);"
                               ,"  } else {"
-                              ,"    // printf(\"no exception\");"
-  --                            ,"    printf(\"%p\\n\", res);"
+                              ,"    // eprintf(\"no exception\");"
+  --                            ,"    eprintf(\"%p\\n\", res);"
                               ,"    return res;"
                               ,"  }"
                               ,"}"]
@@ -138,7 +141,7 @@ wrapper f = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
                                     
 
 def :: String -> String
-def f =  "  printf(\"Defining |" ++ f  ++ "|\\n\");\n" ++ "rb_define_method(Fake, \"" ++ f ++"\","++ f++", 1);"
+def f =  "  eprintf(\"Defining |" ++ f  ++ "|\\n\");\n" ++ "rb_define_method(Fake, \"" ++ f ++"\","++ f++", 1);"
 
 forwardDecl::String->String
 forwardDecl f =  "VALUE hubrish_" ++ f ++ "(VALUE);"

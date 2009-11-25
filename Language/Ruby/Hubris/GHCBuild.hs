@@ -31,7 +31,7 @@ genHaskellFile code = do (name, handle) <- openTempFile "/tmp" "hubris_XXXXX.hs"
 -- We do need rshim.o, but it's packaged in the hubris lib, with any luck.
 ghcBuild :: Filename -> String -> String -> [Filename] -> [Filename] -> [String]-> IO (Maybe (ExitCode,String))
 ghcBuild libFile immediateSource modName extra_sources c_sources args =
-       do putStrLn ("modname is " ++ modName)
+       do -- putStrLn ("modname is " ++ modName)
           -- let c_wrapper = modName ++ ".aux.o"
           -- eesh, this is awful...
           -- doOrDie $ System.system("gcc -c -I/opt/local/include/ruby-1.9.1 -o " ++ c_wrapper ++ " " ++ unwords c_sources)

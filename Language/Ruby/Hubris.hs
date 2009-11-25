@@ -19,7 +19,7 @@ import System.IO.Unsafe
 wrap :: (Haskellable a, Show b, Rubyable b) => (a->b) -> (Value -> Value)
 wrap func ar = case (toHaskell ar) of
                  Just a -> toRuby $ func a
-                 Nothing -> unsafePerformIO $ Prelude.putStrLn "exception:" >> createException "BLAh" --  fromRVal T_NIL  -- fixme - create an exception
+                 Nothing -> unsafePerformIO $ createException "BLAh" 
 
 -- wrapshow :: (Haskellable a, Show b, Show a, Rubyable b) => (a->b) -> (Value -> Value)
 -- wrapshow func ar = trace "Wrap called" $ let rv = fromVal ar
@@ -85,6 +85,8 @@ instance Haskellable ByteString where
 instance Rubyable ByteString where
   toRuby s = unsafePerformIO $ useAsCString s rb_str_new2
 
+-- instance Rubyable a => Rubyable [a] where
+--  toRuby s =  
 
 -- instance Rubyable a => Rubyable [a] where
 --   toRuby _ = error "List of as"

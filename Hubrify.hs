@@ -10,9 +10,9 @@ main = do
    let src = filter (\x -> x /= "--strict") extra_src
        args = if (length src == length extra_src)
               then []
-              else [] -- ["-Wall", "-Werror"]
+              else ["-Wall", "-Werror"]
    res <- generateLib ("/var/hubris/cache/" ++ zenc mod ++ ".bundle")  src mod args
-   print res
+   -- print res
    case res of
      Left a  -> putStrLn ("Failed: " ++ a) >> exitFailure
      Right _ -> exitSuccess
