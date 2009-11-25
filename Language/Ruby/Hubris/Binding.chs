@@ -96,26 +96,26 @@ createException s = newCAString s >>= buildException --  ("puts HaskellError.met
 
 
 
-data RValue = T_NIL  
-            | T_FLOAT Double
-            | T_STRING Value
+-- data RValue = T_NIL  
+--             | T_FLOAT Double
+--             | T_STRING Value
 
-            -- List is non-ideal. Switch to uvector? Array? There's always going
-            -- to be an extraction step to pull the RValues out.
-            | T_ARRAY [RValue]
-            | T_FIXNUM Int 
-            | T_HASH  Value --  Int -- definitely FIXME - native ruby hashes, or going to transliterate into Data.Map?
-            | T_BIGNUM Integer    
+--             -- List is non-ideal. Switch to uvector? Array? There's always going
+--             -- to be an extraction step to pull the RValues out.
+--             | T_ARRAY [RValue]
+--             | T_FIXNUM Int 
+--             | T_HASH  Value --  Int -- definitely FIXME - native ruby hashes, or going to transliterate into Data.Map?
+--             | T_BIGNUM Integer    
 
-            -- technically, these are mapping over the types True and False,
-            -- I'm going to treat them as values, though.
-            | T_TRUE  
-            | T_FALSE      
-            | T_OBJECT Value
-            | T_CLASS  Value
---            | T_EXCEPTION String
-            | T_SYMBOL Word -- interned string
-              deriving (Eq, Show)
+--             -- technically, these are mapping over the types True and False,
+--             -- I'm going to treat them as values, though.
+--             | T_TRUE  
+--             | T_FALSE      
+--             | T_OBJECT Value
+--             | T_CLASS  Value
+-- --            | T_EXCEPTION String
+--             | T_SYMBOL Word -- interned string
+--               deriving (Eq, Show)
 -- These are the other basic Ruby structures that we're not handling yet.
 --          | T_REGEXP     
 --          | T_FILE

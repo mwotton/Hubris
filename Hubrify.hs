@@ -10,7 +10,7 @@ main = do
    let src = filter (\x -> x /= "--strict") extra_src
        args = if (length src == length extra_src)
               then []
-              else ["-Wall", "-Werror"]
+              else ["-Wall", "-Werror","-fno-warn-unused-imports"]
    res <- generateLib ("/var/hubris/cache/" ++ zenc mod ++ ".bundle")  src mod args
    -- print res
    case res of

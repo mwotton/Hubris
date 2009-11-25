@@ -97,7 +97,6 @@ genC exportable zmoduleName= unlines $
          ,"  VALUE Fake = Qnil;"
          ,"  safe_hs_init();"
          ,"  Fake = rb_define_module_under(Exports, \"" ++ zmoduleName ++ "\");"
-         --                  "Fake = rb_define_module(\"" ++ rubyName ++"\");",
          ,"  eprintf(\"defined module " ++ rubyName ++ ":%p\\n\", Fake);"
          ] ++ map def exportable ++  ["}"]
   where rubyName = "Hubris::Exports::" ++ zmoduleName
@@ -108,17 +107,9 @@ genHaskell exportable moduleName = unlines $
                               "import Language.Ruby.Hubris",
                               "import qualified Prelude as P()",
                               "import Language.Ruby.Hubris.Binding",
-                              --                     "import System.IO",
-                                 --                     "import Debug.Trace",
                               "import qualified " ++ moduleName] ++
-                              -- really hubris_exports should be a guaranteed safe name - FIXME
-                                 --            ["hubris_exports = Language.Ruby.Hubris.wrap (\\ (_ :: Int) -> \"" ++ (concat $ intersperse "," exportable) ++ "\")",
-        --             "foreign export ccall \"exports\" hubris_exports :: Value -> Value" ] ++ 
-                    -- gah, this doesn't work - have to load haskell runtime first. 
---                     ["dummy = putStrLn \"Loaded\" >> hs_init",
---                      "foreign export ccall \"Init_" ++ moduleName ++ "\" dummy :: IO ()"] ++ 
                              [fun ++ " :: Value -> Value" | fun <- exportable ] ++
---                    [fun ++ " a b = trace  (unwords [show a,show b] ++ \"called " ++ fun ++ "\") (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  fun ++ ") b"| fun <- exportable ] ++ 
+
                              [fun ++ " b = (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  fun ++ ") b"| fun <- exportable ] ++ 
                              ["foreign export ccall \"hubrish_" ++  fun ++ "\" " ++ fun ++ " :: Value -> Value" | fun <- exportable ]
 
@@ -126,18 +117,15 @@ say = liftIO . putStrLn
 
 wrapper :: String -> String
 wrapper f = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
---                              ,"  eprintf(\""++f++" has been called\\n\");"
+                              ,"  eprintf(\""++f++" has been called\\n\");"
                               ,"  VALUE res = hubrish_" ++ f ++"(v);"
                               ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
-                              ,"    eprintf(\"exception\");"
                               ,"    rb_exc_raise(res);"
                               ,"  } else {"
-                              ,"    // eprintf(\"no exception\");"
-  --                            ,"    eprintf(\"%p\\n\", res);"
                               ,"    return res;"
                               ,"  }"
                               ,"}"]
-            in res --trace ("trace:" ++ res ++"endtrace") res
+            in res 
                                     
 
 def :: String -> String

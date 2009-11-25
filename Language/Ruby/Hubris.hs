@@ -13,8 +13,8 @@ import Foreign.C.String
 import Data.ByteString
 -- type Value = CULong
 import System.IO.Unsafe
-
-
+import Data.Array.IArray
+import Monad hiding (when)
 
 wrap :: (Haskellable a, Show b, Rubyable b) => (a->b) -> (Value -> Value)
 wrap func ar = case (toHaskell ar) of
@@ -36,6 +36,8 @@ wrap func ar = case (toHaskell ar) of
 -- fromVal = undefined
 -- fromRVal = undefined
 
+when v b c = guard (rubyType v == b) >> return c
+
 class Haskellable a where
   toHaskell :: Value -> Maybe a
 
@@ -43,9 +45,8 @@ class Rubyable a where
   toRuby :: a -> Value
 
 instance Haskellable Int where
-  toHaskell v = case rubyType v of
-                  RT_FIXNUM -> Just $ fix2int v
-                  _           -> Nothing
+  toHaskell v = when v RT_FIXNUM $ fix2int v
+
 
 instance Rubyable Int where
   toRuby i = int2fix i
@@ -77,22 +78,51 @@ instance Haskellable Double where
                   RT_FLOAT  -> Just $ num2dbl v
                   RT_FIXNUM -> Just $ fromIntegral $ fix2int v
                   _         -> Nothing
+
+instance Rubyable Value where
+  toRuby v = v
+
+instance Haskellable Value where
+  toHaskell v = Just v
+
 instance Haskellable ByteString where
-  toHaskell v = case rubyType v of
-                  RT_STRING -> Just $ unsafePerformIO $ str2cstr v >>= packCString
-                  _         -> Nothing
+  toHaskell v = when v RT_STRING $ unsafePerformIO $ str2cstr v >>= packCString
 
 instance Rubyable ByteString where
   toRuby s = unsafePerformIO $ useAsCString s rb_str_new2
 
--- instance Rubyable a => Rubyable [a] where
---  toRuby s =  
+instance Haskellable [Value] where
+  toHaskell v = when v RT_ARRAY $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
 
--- instance Rubyable a => Rubyable [a] where
---   toRuby _ = error "List of as"
 
---instance Haskellable a => Haskellable [a] where
---  toHaskell = fromVal $ unsafePerformIO $ createException "Haskellable to lists"
+
+instance Rubyable a => Rubyable [a] where
+  toRuby l = unsafePerformIO $ do ary <- rb_ary_new2 $ fromIntegral $ Prelude.length l
+                                  mapM_ (\x -> rb_ary_push ary (toRuby x))  l
+                                  return ary
+
+-- this one is probably horribly inefficient.
+instance (Integral a, Ix a) => Haskellable (Array a Value) where
+  toHaskell v = toHaskell v >>= \x -> return (listArray (0, fromIntegral $ Prelude.length x) x)
+
+-- could be more efficient, perhaps, but it's space-efficient still thanks to laziness
+instance (Rubyable b, Ix a) => Rubyable (Array a b) where
+  toRuby a = toRuby $ Data.Array.IArray.elems a
+
+instance Haskellable RubyHash where
+  toHaskell v = when v RT_HASH $ RubyHash v
+
+instance Rubyable RubyHash where
+  toRuby (RubyHash v) = v
+
+newtype RubyHash = RubyHash Value -- don't export constructor
+
+instance (Ord a, Eq a, Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
+  toRuby s = unsafePerformIO $ 
+             do hash <- rb_hash_new
+                mapM_ (\(k,v) -> rb_hash_aset hash (toRuby k) (toRuby v))  (toList s)
+                return hash
+
 
 -- This is a tricky case.
 -- The ruby FFI wants us to pass a C callback which it can apply to each key-value pair
@@ -124,9 +154,3 @@ instance Rubyable ByteString where
                          
 --   toHaskell _ = Nothing
 
--- instance (Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
---   toRuby s = unsafePerformIO $ 
---              do hash <- rb_hash_new
---                 forM (toList s)
---                      (\(k,v) -> rb_hash_aset hash (fromRVal $ toRuby k) (fromRVal $ toRuby v))
---                 return $ T_HASH hash
