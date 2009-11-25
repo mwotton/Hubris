@@ -57,9 +57,7 @@ foo False = True"; end
     end
     d = Doubler.new
 
-    puts "written"
     d.triple(3.4).should eql(10.2)
-    puts "got doubled"
   end
 end
 
@@ -171,9 +169,6 @@ describe "Target" do
   end
 
   
-  def be_quick
-    simple_matcher("a small duration") { |given| given < 1.0 }
-  end
 end
 
 describe "Exceptions" do
@@ -233,9 +228,9 @@ end
 
 describe 'Realworld' do
   it "can handle the bytestring lib" do
-    system("rm /var/hubris/cache/Data.ByteString.bundle;
-Hubrify Data.ByteString;
-")
+    system("rm /var/hubris/cache/Data.ByteString.bundle 2>/dev/null;
+Hubrify Data.ByteString 2>/dev/null >/dev/null")
+  
     # FIXME zencode module names properly
     class ByteString
       hubris :module => "Data.ByteString"
@@ -248,14 +243,22 @@ Hubrify Data.ByteString;
 end
 
 describe 'Performance' do
+  def be_quick
+    simple_matcher("a small duration") { |given| given < 0.1 }
+  end
+
   it "caches its output" do
-    pending "not really relevant any more"
+    # only relevant for inlining
     t=Target.new
-    u=Target.new
-    t.inline("foobar _ = T_STRING \"rar rar rar\"")
-    before = Time.now
-    u.inline("foobar _ = T_STRING \"rar rar rar\"")
-    after = Time.now
+    class First
+      hubris :inline => "foobar::Int->Int; foobar a = a"
+    end
+    before = Time.now   
+    class Second
+      hubris :inline => "foobar::Int->Int; foobar a = a"
+    end
+    after = Time.now    
+
     (after-before).should be_quick
   end
 

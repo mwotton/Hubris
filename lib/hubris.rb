@@ -27,11 +27,11 @@ end
 
 module Hubris
   VERSION = '0.0.2'
-  SO_CACHE = File.expand_path("~/.hubris_cache")
+  SO_CACHE = File.expand_path("/var/hubris/cache")
   require 'HubrisStubLoader'
-  system('mkdir ' + SO_CACHE)
+  # system('mkdir ' + SO_CACHE)
   $:.push(SO_CACHE)
-
+  @always_rebuild=false
   @packages = []
   def self.add_packages(packages)
     @packages.concat packages
@@ -47,13 +47,13 @@ module Hubris
     if    options[:inline]
       # FIXME, how do we come up with a random module name
       
-      File.withTempFile("xxxx.hs") do |filename, handle|
-        filename =~ /([^\/]*)\.hs$/
-        mod = $1.capitalize
-        handle.write "module #{mod} where\n" + options[:inline]+"\n"
-        handle.close
-        build(filename, build_args)
-      end
+      # File.withTempFile("xxxx.hs") do |filename, handle|
+      mod = "Inline_#{Digest::MD5.hexdigest(options[:inline] + build_args.to_s)}"
+      filename = "/var/hubris/cache/#{Hubris.trans_name(mod)}.hs" 
+      handle = File.open(filename, "w")
+      handle.write "module #{mod} where\n" + options[:inline]+"\n"
+      handle.close
+      build(filename, build_args)
     elsif options[:source]
       build(options[:source], build_args)
     elsif options[:module]
@@ -64,7 +64,7 @@ module Hubris
   end
 
   def self.trans_name(func)
-    func.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zd').gsub(/_/,'zu').gsub(/'/, 'zq') 
+    func.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zi').gsub(/_/,'zu').gsub(/'/, 'zq') 
   end
   
   def build(source, args)
@@ -72,42 +72,35 @@ module Hubris
     l = File.open(source).read
     l =~ /^ *module *([^ \t\n]*)/
     mod = $1
-    print "source: #{source}\n"
-    print "module name is #{mod}\n"
+    # print "source: #{source}\n"
+    # print "module name is #{mod}\n"
     libFile = genLibFileName(mod)
-    status,msg = noisy("Hubrify #{mod} #{source} #{args.join(' ')}")
-    if not status
-      raise HaskellError.new("Couldn't compile the module, FIXME:\n#{msg}")
-    else
-      puts "Succeeded: #{msg}"
-    end
-#     # this needs fixing
-#     status,msg= noisy("cc -dynamic -arch i386 -bundle -dynamic -flat_namespace -undefined suppress -weak_reference_mismatches non-weak -undefined suppress -o #{libFile} -lbundle1.o -L. -L/opt/local/lib -L.  -L/usr/local/lib -L/usr/lib/i686-apple-darwin9/4.0.1 -L/usr/lib/gcc/i686-apple-darwin9/4.0.1  #{prelim} Language.Ruby.Hubris.Exports.#{mod}.aux.o /usr/local/lib/ghc-6.13.20090928/libHSrts-ghc6.13.20090928.dylib -lruby -lpthread -ldl -lobjc -lgcc_s.10.5 -lgcc -lSystem")
+    if !File.exists?(libFile) || @always_rebuild
 
-#     if status
-#       raise HaskellError.new("Couldn't link the module, FIXME:\n#{msg}")
-#     else
-#       puts "Succeeded: #{msg}"
-#     end
+      status,msg = Hubris.noisy("Hubrify #{mod} #{source} #{args.join(' ')}")
+      if status.exitstatus != 0
+        raise HaskellError.new("Couldn't compile the module, FIXME:\n#{msg + status.exitstatus.to_s}")
+      end
+    end
     load(mod)
   end
-  
+   
   def load(mod)
     # search path for modules?
     libFile = genLibFileName(mod)
     begin
-      puts "requiring #{libFile}"
+      #puts "requiring #{libFile}"
       require libFile
-      puts "reqd"
+      #puts "reqd"
       # raise LoadError
     rescue LoadError
       raise HaskellError, "loading #{libFile} failed: " +
-        "\n" + $!.to_s + "\n" + `nm #{libFile}` + "\n"
+        "\n" + $!.to_s + "\n" + `nm #{libFile} 2>/dev/null` + "\n"
     end
     # bind them all into target_module
     include(eval("Hubris::Exports::" + Hubris.trans_name(mod)))
   end
-  private
+  private 
   
   def genLibFileName(mod)
     cache = "/var/hubris/cache"
@@ -124,12 +117,12 @@ module Hubris
       "so" #take a punt
     end
   end
-  def noisy(str)
+  def self.noisy(str)
     pid, stdin, stdout, stderr = Open4.popen4 str
-    # puts "waiting for #{pid}, running #{str}"
+    # puts "running #{str}\n"
 
     ignored, status = Process.waitpid2 pid
-    puts "Status: #{status}"
+    # puts "Status: #{status.exitstatus}"
     # puts "#{pid} done"
     
     
@@ -137,8 +130,9 @@ module Hubris
 ran   |#{str}|
 output|#{stdout.read}|
 error |#{stderr.read}|
+status |#{status}|
 EOF
-    return [status, msg]
+    return status, msg
   end
   
 end

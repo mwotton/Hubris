@@ -12,11 +12,9 @@ void safe_hs_init() {
   argv[0]="haskell_extension";
   if (! loaded) {
     loaded=1;
-    printf("really loading haskell runtime\n");
+    // printf("really loading haskell runtime\n");
     hs_init(&argc, &argv);
-  } else {
-    printf("Already loaded, skipping\n");
-  }
+  } 
 }
 
 void Init_HubrisStubLoader() {
