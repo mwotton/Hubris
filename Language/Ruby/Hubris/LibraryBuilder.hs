@@ -29,7 +29,7 @@ genCFile code = do (name, handle) <- openTempFile "/tmp" "hubris_interface_XXXXX
 generateLib :: Filename -> [Filename] -> ModuleName -> [String] -> IO (Either Filename String)
 generateLib libFile sources moduleName buildArgs = do
   -- set up the static args once
-  GHC.parseStaticFlags $ map noLoc $ words "-dynamic -fPIC -package hubris"
+  GHC.parseStaticFlags $ map noLoc $ words "-dynamic -fPIC -package hubris -package pcre-light" -- urgh, this needs work
 
   -- let libFile = zenc ("libHubris_" ++ moduleName))
   s <- generateSource sources moduleName
@@ -53,13 +53,8 @@ generateSource :: [Filename] ->   -- optional haskell source to load into the in
                    IO (Either InterpreterError (Maybe (String,String)))
 generateSource sources moduleName = runInterpreter $ do
          let zmoduleName = zenc moduleName
-         -- say $ show sources
          loadModules sources
-         -- say "loaded"
-         -- setTopLevelModules [moduleName]
          setImportsQ $ map (\x->(x,Just x)) $ ("Language.Ruby.Hubris"):("Language.Ruby.Hubris.Binding"):moduleName:[]
-
-
          functions <- getFunctions moduleName
          say $ "Candidates: " ++ (show functions)
        -- ok, let's see if we can come up with an expression of the right type
@@ -74,7 +69,6 @@ generateSource sources moduleName = runInterpreter $ do
 
          say $ "Exportable: " ++ (show exportable)
          return $ guard (not $ null exportable) >> return (genC exportable zmoduleName ,genHaskell exportable moduleName )                      
---                          "char * HubrisExports[" ++(show $ length exportable + 1) ++ "] = {" ++ (concat $ intersperse "," $ map (\x -> "\"" ++ x ++ "\"") exportable) ++ "};",
                           
 genC :: [String] -> String -> String
 genC exportable zmoduleName= unlines $ 
