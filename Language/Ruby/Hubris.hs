@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-} 
+{-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances #-} 
 module Language.Ruby.Hubris where
 
 import Data.Word
@@ -8,38 +8,44 @@ import System.IO.Unsafe (unsafePerformIO)
 import Foreign.C.Types
 import Language.Ruby.Hubris.Binding
 import Control.Monad (forM)
+import Control.Applicative
 import Debug.Trace
 import Foreign.C.String
-import Data.ByteString
+import qualified Data.ByteString as S
+import qualified Data.ByteString.Lazy as L
+import  Data.ByteString.Internal(w2c,c2w)
 -- type Value = CULong
 import System.IO.Unsafe
 import Data.Array.IArray
+import Data.Maybe
+import Control.Exception
+import Prelude hiding(catch)
 import Monad hiding (when)
+import Data.Typeable
 
 wrap :: (Haskellable a, Show b, Rubyable b) => (a->b) -> (Value -> Value)
-wrap func ar = case (toHaskell ar) of
-                 Just a -> toRuby $ func a
-                 Nothing -> unsafePerformIO $ createException "BLAh" 
+wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell v)
+                                  case r of
+                                    Left (e::HubrisException) -> createException "Blah" `traces` "died in haskell"
+                                    Right a                   -> return a
 
--- wrapshow :: (Haskellable a, Show b, Show a, Rubyable b) => (a->b) -> (Value -> Value)
--- wrapshow func ar = trace "Wrap called" $ let rv = fromVal ar
---                                          in trace (unlines ["raw:" ++ show ar,
---                                                             "in:" ++ show rv]) $ fromRVal $ 
---                                             case (toHaskell rv) of
---                                             Just a ->  let v = func a in
---                                                            trace("out" ++ show v) (toRuby v)
---                                             Nothing -> T_NIL
+data HubrisException = HubrisException
+  deriving(Show, Typeable)
 
+instance Exception HubrisException
 
--- fromVal :: Value -> RValue
--- fromRVal ::RValue -> Value
--- fromVal = undefined
--- fromRVal = undefined
+-- utility stuff:
+sshow s = Prelude.map w2c $S.unpack s
+lshow s = Prelude.map w2c $L.unpack s
+--traces = flip trace
+traces a b = a
 
-when v b c = guard (rubyType v == b) >> return c
+when v b c = if (rubyType v == b)
+               then c
+               else throw HubrisException
 
 class Haskellable a where
-  toHaskell :: Value -> Maybe a
+  toHaskell :: Value -> a
 
 class Rubyable a where
   toRuby :: a -> Value
@@ -53,18 +59,18 @@ instance Rubyable Int where
 
 instance Haskellable Integer where
   toHaskell v = case rubyType v of
-                  RT_BIGNUM -> Just $ read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
-                  RT_FIXNUM -> Just $ fromIntegral $ fix2int v
-                  _         -> Nothing
+                  RT_BIGNUM -> read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
+                  RT_FIXNUM -> fromIntegral $ fix2int v
+                  _         -> throw HubrisException -- wonder if it's kosher to just let the pattern match fail...
 
 instance Rubyable Integer where
   toRuby i = rb_str_to_inum (unsafePerformIO $ (newCAString $ show i) >>= rb_str_new2) 10 1
 
 instance Haskellable Bool where
   toHaskell v = case rubyType v of
-                RT_TRUE  -> Just True
-                RT_FALSE -> Just False
-                _        -> Nothing
+                RT_TRUE  -> True
+                RT_FALSE -> False
+                _        -> throw HubrisException
 
 instance Rubyable Bool where
   toRuby True  = constToRuby RUBY_Qtrue
@@ -75,24 +81,38 @@ instance Rubyable Double where
 
 instance Haskellable Double where
   toHaskell v = case rubyType v of
-                  RT_FLOAT  -> Just $ num2dbl v
-                  RT_FIXNUM -> Just $ fromIntegral $ fix2int v
-                  _         -> Nothing
+                  RT_FLOAT  -> num2dbl v
+                  RT_FIXNUM -> fromIntegral $ fix2int v
+                  _         -> throw HubrisException
 
 instance Rubyable Value where
   toRuby v = v
 
 instance Haskellable Value where
-  toHaskell v = Just v
+  toHaskell v = v
 
-instance Haskellable ByteString where
-  toHaskell v = when v RT_STRING $ unsafePerformIO $ str2cstr v >>= packCString
 
-instance Rubyable ByteString where
-  toRuby s = unsafePerformIO $ useAsCString s rb_str_new2
+instance Haskellable S.ByteString where
+  toHaskell v = when v RT_STRING $ unsafePerformIO $ 
+                do a <- str2cstr v >>= S.packCString  
+                   return a `traces` ("strict to Haskell: " ++ sshow a)
 
-instance Haskellable [Value] where
-  toHaskell v = when v RT_ARRAY $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
+instance Rubyable S.ByteString where
+  toRuby s = unsafePerformIO $ S.useAsCStringLen s  $ 
+                               \(cs,len) -> rb_str_new (cs,len) `traces` ("sstrict back to ruby:" ++ (show $ S.unpack s))
+                                                          
+
+
+
+instance Haskellable L.ByteString where
+  toHaskell v = L.fromChunks [toHaskell v]
+
+instance Rubyable L.ByteString where
+  toRuby s = let res = S.concat $ L.toChunks s
+             in trace ("lazy back to ruby: " ++ show (S.unpack res)) (toRuby res)
+
+instance Haskellable a => Haskellable [a] where
+  toHaskell v = when v RT_ARRAY $ Prelude.map toHaskell $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
 
 
 
@@ -102,8 +122,8 @@ instance Rubyable a => Rubyable [a] where
                                   return ary
 
 -- this one is probably horribly inefficient.
-instance (Integral a, Ix a) => Haskellable (Array a Value) where
-  toHaskell v = toHaskell v >>= \x -> return (listArray (0, fromIntegral $ Prelude.length x) x)
+instance (Integral a, Ix a, Haskellable b) => Haskellable (Array a b) where
+  toHaskell v = let x = toHaskell v in (listArray (0, fromIntegral $ Prelude.length x) x)
 
 -- could be more efficient, perhaps, but it's space-efficient still thanks to laziness
 instance (Rubyable b, Ix a) => Rubyable (Array a b) where
@@ -115,6 +135,17 @@ instance Haskellable RubyHash where
 instance Rubyable RubyHash where
   toRuby (RubyHash v) = v
 
+
+-- Nil maps to Nothing - all the other falsey values map to real haskell values.
+instance Haskellable a => Haskellable (Maybe a) where 
+  toHaskell v = case rubyType v of
+                  RT_NIL -> Nothing                `traces` "Haskell got nothing"
+                  _      -> Just (toHaskell v)     `traces` "Haskell got a value"
+                                                
+instance Rubyable a => Rubyable (Maybe a) where
+  toRuby Nothing  = constToRuby RUBY_Qnil          `traces` "Sending ruby a nil"
+  toRuby (Just a) = toRuby a                       `traces` "Sending a value back"
+
 newtype RubyHash = RubyHash Value -- don't export constructor
 
 instance (Ord a, Eq a, Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
@@ -122,6 +153,17 @@ instance (Ord a, Eq a, Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
              do hash <- rb_hash_new
                 mapM_ (\(k,v) -> rb_hash_aset hash (toRuby k) (toRuby v))  (toList s)
                 return hash
+
+instance (Ord a, Eq a, Haskellable b, Haskellable a) => Haskellable (Map.Map a b) where
+  toHaskell hash = when hash RT_HASH $ unsafePerformIO $ 
+                -- fromJust is legit, rb_keys will always return list
+                     do l :: [Value] <- toHaskell <$> rb_keys hash
+                        foldM (\m k -> do val <- rb_hash_aref hash k
+                                          return $ Map.insert (toHaskell k) 
+                                                              (toHaskell val)
+                                                              m)
+                              Map.empty l
+                                                   
 
 
 -- This is a tricky case.

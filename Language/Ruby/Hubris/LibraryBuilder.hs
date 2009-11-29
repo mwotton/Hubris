@@ -7,7 +7,7 @@ import Language.Haskell.Meta.QQ.HsHere
 import Language.Ruby.Hubris.GHCBuild
 
 import List(intersperse)
-import Debug.Trace
+import qualified Debug.Trace
 import Control.Monad
 import Control.Monad.Error.Class
 
@@ -17,7 +17,7 @@ import System.Exit
 import Language.Ruby.Hubris.ZCode (zenc,zdec)
 
 type Filename = String
-
+trace a b = b
 
 -- argh, this is ugly. should be a withTempFile construct of some kind.
 genCFile :: String -> IO String
@@ -26,10 +26,10 @@ genCFile code = do (name, handle) <- openTempFile "/tmp" "hubris_interface_XXXXX
                    hClose handle
                    return name
 
-generateLib :: Filename -> [Filename] -> ModuleName -> [String] -> IO (Either Filename String)
-generateLib libFile sources moduleName buildArgs = do
-  -- set up the static args once
-  GHC.parseStaticFlags $ map noLoc $ words "-dynamic -fPIC -package hubris -package pcre-light" -- urgh, this needs work
+generateLib :: Filename -> [Filename] -> ModuleName -> [String] -> [String] -> IO (Either Filename String)
+generateLib libFile sources moduleName buildArgs packages = do
+  -- set up the static args once  
+  GHC.parseStaticFlags $ map noLoc $ words $ "-dynamic -fPIC" ++ unwords (map ("-package "++) ("hubris":packages)) 
 
   -- let libFile = zenc ("libHubris_" ++ moduleName))
   s <- generateSource sources moduleName
@@ -62,9 +62,9 @@ generateSource sources moduleName = runInterpreter $ do
 
          exportable  <- filterM (\func -> do let rubyVal ="(fromIntegral $ fromEnum $ Language.Ruby.Hubris.Binding.RUBY_Qtrue)"
                                              let f = "Language.Ruby.Hubris.wrap " ++ moduleName ++"." ++func ++" " ++ rubyVal
-                                             -- say f
-                                             --    (typeOf f >>= \n -> say $ "type of wrap." ++ func ++ " is " ++ show n) 
-                                             --         `catchError` (say . show)
+                                             say f
+                                             (typeOf f >>= \n -> say $ "type of wrap." ++ func ++ " is " ++ show n) 
+                                                     `catchError` (say . show)
                                              typeChecks (f ++ "==" ++ rubyVal )) functions
 
          say $ "Exportable: " ++ (show exportable)
@@ -76,6 +76,7 @@ genC exportable zmoduleName= unlines $
           ,"#include <stdlib.h>"
           ,"#define HAVE_STRUCT_TIMESPEC 1"
           ,"#include <ruby.h>"
+--          ,"#define DEBUG 1"
           ,"#ifdef DEBUG"
           ,"#define eprintf printf"
           ,"#else"
@@ -114,8 +115,10 @@ wrapper f = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
                               ,"  eprintf(\""++f++" has been called\\n\");"
                               ,"  VALUE res = hubrish_" ++ f ++"(v);"
                               ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
+                              ,"    eprintf(\""++f++" has provoked an exception\\n\");"                               
                               ,"    rb_exc_raise(res);"
                               ,"  } else {"
+                              ,"    eprintf(\"returning from "++f++"\\n\");"
                               ,"    return res;"
                               ,"  }"
                               ,"}"]
