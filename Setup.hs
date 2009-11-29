@@ -11,7 +11,7 @@ main = defaultMainWithHooks hooks
 hooks = simpleUserHooks
   {
    preConf = \arg flags -> do
-              -- let ConfigFlags{scratch} = undefined
-      writeFile "includes.hs" ("module Includes where\nextraIncludeDirs=" ++ show (configExtraIncludeDirs flags))
+      -- probably a nicer way of getting that directory...       
+      writeFile "dist/build/autogen/Includes.hs" ("module Includes where\nextraIncludeDirs=" ++ show (configExtraIncludeDirs flags))
       return emptyHookedBuildInfo
   }
