@@ -1,5 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
-
+module Fibonacci where
 -- module Test where
 
 import Foreign.C.Types
@@ -18,11 +17,3 @@ fibonacci n = fibs !! n
 
 -- lookup_hs ::CInt -> CInt
 -- lookup_hs = fromIntegral . Maybe.fromJust . ((flip Data.Map.lookup) local_map) . fromIntegral
--- foreign export ccall lookup_hs :: CInt -> CInt
-
-fibonacci_hs :: CInt -> CInt
-fibonacci_hs = fromIntegral . fibonacci . fromIntegral
-
-foreign export ccall fibonacci_hs :: CInt -> CInt
-
--- main = putStrLn "foo"
