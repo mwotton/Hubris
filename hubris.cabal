@@ -15,10 +15,9 @@ Stability:      Experimental
 extra-source-files: 
 Synopsis:       Support library for Hubris, the Ruby <=> Haskell bridge
 Description:    Support library for Hubris, the Ruby <=> Haskell bridge
-more info at http://github.com/mwotton/Hubris-Haskell
-short version: ./Setup configure --enable-shared --ghc-options=-dynamic --extra-include-dirs=<YOUR RUBY HEADERS> --extra-lib-dirs=<YOUR RUBY LIB LOCATION>
-
-If you omit any of those flags, it will seem to work then blow up at runtime.
+                more info at http://github.com/mwotton/Hubris-Haskell
+                short version: ./Setup configure --enable-shared --ghc-options=-dynamic --extra-include-dirs=<YOUR RUBY HEADERS> --extra-lib-dirs=<YOUR RUBY LIB LOCATION>
+                If you omit any of those flags, it will seem to work then blow up at runtime.
 
 
 Library
