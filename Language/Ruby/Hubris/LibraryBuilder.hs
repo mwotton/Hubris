@@ -3,7 +3,7 @@ module Language.Ruby.Hubris.LibraryBuilder (generateLib) where
 import Language.Ruby.Hubris.ZCode (zenc, zdec)
 import Language.Ruby.Hubris
 import Language.Haskell.Interpreter
-import Language.Haskell.Meta.QQ.HsHere
+-- import Language.Haskell.Meta.QQ.HsHere
 import Language.Ruby.Hubris.GHCBuild
 
 import List(intersperse)
