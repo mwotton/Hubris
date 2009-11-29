@@ -22,7 +22,7 @@ Description:    Support library for Hubris, the Ruby <=> Haskell bridge
 
 Library
 -- the ordering is critical, because Cabal doesn't do dependency analysis.
-        Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild
+        Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild, Includes
         c-sources: cbits/rshim.c 
         includes:  cbits/rshim.h
         install-includes:  cbits/rshim.h
@@ -37,7 +37,7 @@ Library
 Executable Hubrify
   Main-is:           Hubrify.hs
   Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 1.9, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint, process
-  Other-Modules:     Language.Ruby.Hubris.Binding
+  Other-Modules:     Language.Ruby.Hubris.Binding, Includes
   c-sources: cbits/rshim.c 
   include-dirs: cbits 
   extra-libraries: ruby
