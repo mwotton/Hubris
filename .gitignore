@@ -26,3 +26,11 @@ Setup
 dist
 *.hi
 *.o
+*.aux
+*.log
+*.dvi
+*.snm
+*.toc
+*.vrb
+*.nav
+*.out
