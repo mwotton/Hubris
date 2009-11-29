@@ -270,10 +270,7 @@ end
 
 describe 'Realworld' do
   it "can handle the bytestring lib" do
-    # system("rm /var/hubris/cache/Data.ByteString.bundle 2>/dev/null;
-    # Hubrify Data.ByteString 2>/dev/null >/dev/null")
-    puts "bytestring"
-    # FIXME zencode module names properly
+
     class ByteString
       hubris :module => "Data.ByteString"
     end
