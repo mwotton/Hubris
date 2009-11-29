@@ -28,86 +28,64 @@ end
 module Hubris
   VERSION = '0.0.2'
   SO_CACHE = File.expand_path("/var/hubris/cache")
+  HS_CACHE = File.expand_path("/var/hubris/source")
   require 'HubrisStubLoader'
-  # system('mkdir ' + SO_CACHE)
+  [SO_CACHE,HS_CACHE].each {|dir| FileUtils.mkdir_p(dir)}
   $:.push(SO_CACHE)
   @always_rebuild=false
-  @packages = []
+
+  @@basepackages = []
   def self.add_packages(packages)
-    @packages.concat packages
+    @@basepackages.concat packages
   end
   
   # load the new functions into target
   def hubris(options = { })
-    build_args = options[:no_strict] ? [""] : ["--strict"] # FIXME
+    # :inline beats :source beats :mod
+    immediate, source, mod,packages = [:inline,:source,:module,:packages].collect {|x| options[x]}
+    build_args = options[:no_strict] ? [] : ["--strict"]
+    # puts packages
 
-    if options.keys.select{ |x| x==:source || x==:module || x==:inline }.count != 1
-      raise "Bad call - needs exactly one of :source, :module or :inline defined in hubris call"
-    end
-    if    options[:inline]
-      # FIXME, how do we come up with a random module name
-      
-      # File.withTempFile("xxxx.hs") do |filename, handle|
-      mod = "Inline_#{Digest::MD5.hexdigest(options[:inline] + build_args.to_s)}"
-      filename = "/var/hubris/cache/#{Hubris.trans_name(mod)}.hs" 
-      handle = File.open(filename, "w")
-      handle.write "module #{mod} where\nimport Language.Ruby.Hubris.Binding\n" + options[:inline]+"\n"
-      handle.close
-      build(filename, build_args)
-    elsif options[:source]
-      build(options[:source], build_args)
-    elsif options[:module]
-      load(options[:module])
-    else
-      raise "code error, should never happen"
-    end
+    # leaves generated source lying around - might want to clean up, but
+    # useful for debugging too...
+    source = anonymous_module(immediate, build_args) if immediate
+    mod    = gen_modname(source)                     if source
+    raise "code error, should never happen" unless mod
+    require(hubrify(mod,build_args,source||"",packages||[])) # let it crash
+
+    # bind the functions from the Exports namespace
+    include(eval("Hubris::Exports::#{zencode(mod)}"))
   end
 
-  def self.trans_name(func)
-    func.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zi').gsub(/_/,'zu').gsub(/'/, 'zq') 
+  private
+
+  def anonymous_module(source,build_args)
+    mod = "Inline_#{Digest::MD5.hexdigest(source + build_args.to_s)}"
+    filename = "#{HS_CACHE}/#{zencode(mod)}.hs" 
+    File.open(filename, "w") {|h| h.write "module #{mod} where\nimport Language.Ruby.Hubris.Binding\n#{source}\n"}
+    return filename
   end
-  
-  def build(source, args)
+
+  def gen_modname(filename)
     # find the code, compile into haskell module in namespace, set 
-    l = File.open(source).read
+    l = File.open(filename).read
     l =~ /^ *module *([^ \t\n]*)/
-    mod = $1
-    # print "source: #{source}\n"
-    # print "module name is #{mod}\n"
-    libFile = genLibFileName(mod)
-    if !File.exists?(libFile) || @always_rebuild
-      # if Hubrify's not installed, we throw an exception. just as good as explicitly checking a flag.
-      status,msg = Hubris.noisy("Hubrify #{mod} #{source} #{args.join(' ')}")
-      if status.exitstatus != 0
-        raise HaskellError.new("Couldn't compile the module, FIXME:\n#{msg + status.exitstatus.to_s}")
-      end
-    end
-    load(mod)
+    return $1
   end
-   
-  def load(mod)
-    # search path for modules?
-    libFile = genLibFileName(mod)
-    if !File.exists?(libFile)
-      status,msg = Hubris.noisy("Hubrify #{mod}")
-      if status.exitstatus != 0
-        raise HaskellError.new("Couldn't find the module, FIXME:\n#{msg + status.exitstatus.to_s}")
-      end
-    end
-    begin
-      require libFile
-    rescue LoadError
-      raise HaskellError, "loading #{libFile} failed: " +
-        "\n" + $!.to_s + "\n" + `nm #{libFile} 2>/dev/null` + "\n"
-    end
-    # bind them all into target_module
-    include(eval("Hubris::Exports::" + Hubris.trans_name(mod)))
+
+  def zencode(name)
+    name.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zi').gsub(/_/,'zu').gsub(/'/, 'zq') 
   end
-  private 
   
-  def genLibFileName(mod)
-    cache = "/var/hubris/cache"
-    return "#{cache}/#{Hubris.trans_name(mod)}.#{dylib_suffix}"
+  def hubrify(mod, args, src,packages=[])
+    libFile = "#{SO_CACHE}/#{zencode(mod)}.#{dylib_suffix}"
+    if @always_rebuild or !File.exists?(libFile)
+      status,msg = Hubris.noisy("Hubrify --module #{mod} --output #{libFile} #{args.join(' ')} " + 
+                                (packages+@@basepackages).collect{|x| "--package #{x}"}.join(' ') + ' ' + src)
+      # if Hubrify's not installed, we throw an exception. just as good as explicitly checking a flag.
+      raise HaskellError.new("Hubrify error:\n#{msg + status.exitstatus.to_s}") unless status.exitstatus == 0
+    end
+    return libFile
   end
   
   def dylib_suffix
@@ -120,11 +98,12 @@ module Hubris
       "so" #take a punt
     end
   end
+  
   def self.noisy(str)
     pid, stdin, stdout, stderr = Open4.popen4 str
     # puts "running #{str}\n"
 
-    ignored, status = Process.waitpid2 pid
+
     # puts "Status: #{status.exitstatus}"
     # puts "#{pid} done"
     
@@ -133,115 +112,20 @@ module Hubris
 ran   |#{str}|
 output|#{stdout.read}|
 error |#{stderr.read}|
-status |#{status}|
 EOF
+    ignored, status = Process.waitpid2 pid
+    msg += "status |#{status}|"
     return status, msg
   end
   
 end
+
 # this may be sketchy :)
 class Class
   include Hubris
-  #   self.class_eval do
-  #     def hubris(options)
-  #       Hubris.hubris(self, options)
-  #     end
-  #   end
 end
 
-##### DEPRECATED #########
-
-module HubrisOld
-  private
-  def ruby_header_dir
-    # Possible config values for 1.8.6:
-    # archdir and topdir
-    # For 1.9: rubyhdrdir
-    Config::CONFIG['rubyhdrdir'] || Config::CONFIG['topdir'] 
-  end
-
-
-
-  def self.base_lib_dir
-    File.expand_path( File.dirname(__FILE__))
-  end
-
-
-  def self.find_suitable_ghc()
-    # if HUBRIS_GHC is specified, don't try anything else.
-    ghcs = ENV['HUBRIS_GHC'] ||  Dir.glob(ENV['PATH'].split(':').map {|p| p + "/ghc*" }).select {|x| x =~ /\/ghc(-[0-9\.]*)?$/}
-    ghcs = ghcs.each { |candidate|
-      version = `#{candidate} --numeric-version`.chomp
-      return [candidate, version] if version >= '6.11' 
-    }
-    raise(HaskellError, "Can't find an appropriate ghc: tried #{ghcs}")
-  end
-
-  # GHC,GHC_VERSION = Hubris::find_suitable_ghc
-  # RubyHeader = ruby_header_dir or raise HaskellError, "Can't get rubyhdrdir"
-
-
-
-  def self.base_loader_code mod_name, lib_name
-    %~/* so, here's the story. We have the functions, and we need to expose them to Ruby */
-/* this is about as filthy as it looks, but gcc chokes otherwise, with a redefinition error. */
-#define HAVE_STRUCT_TIMESPEC 1 
-#include <stdio.h>
-#include "ruby.h"
-VALUE #{mod_name} = Qnil;
-extern void hs_init(int * argc, char ** argv[]);
-
-void Init_#{lib_name}() {
-    int argc = 1;
-    // this needs to be allocated on the heap or we get a segfault
-    char ** argv = malloc(sizeof(char**) * 1);
-    argv[0]="haskell_extension";
-//    printf("initialising #{lib_name}\\n");
-
-    hs_init(&argc, &argv);
-   // printf("initialised #{lib_name}\\n");
-    #{mod_name} = rb_define_class("#{mod_name}", rb_cObject);
-   // printf("defined classes for #{lib_name}\\n");
-    ~
-
-      # class Module; def hubris; self.class_eval { def self.h;"hubrified!";end };end;end
-  end
-
-  def self.make_stub(mod_name, lib_name, functions)
-    loader_code = base_loader_code(mod_name, lib_name)
-
-    functions.each do |function_name|
-      loader_code += "VALUE #{function_name}_external(VALUE);\n"
-      # FIXME add the stg roots as well
-      #  loaderCode += "extern void __stginit_#{function_name}zuexternal(void);\n"
-    end
-
-    functions.each do |function_name|
-      # FIXME this is the worng place to be binding methods. Can we bind a bare C method in Ruby
-      # instead?
-      #      loader_code += "rb_define_method(#{mod_name},\"#{function_name}\",#{function_name}_external, 1);\n"
-      loader_code += "rb_define_singleton_method(#{mod_name},\"#{function_name}\",#{function_name}_external, 1);\n"
-      # FIXME this is needed for GHC
-      # loader_code += "hs_add_root(__stginit_#{trans_name(function_name + '_external')});\n"
-    end
-    return loader_code + "}\n"
-  end
-
-  def write_hs_file file_path, haskell_str, functions, mod_name, lib_name
-    File.open( file_path , "w") do |file|
-      # so the hashing algorithm doesn't collide if we try building the same code
-      # with jhc and ghc.
-      #
-      # argh, this isn't quite right. If we inline the same code but on a new ruby module
-      # this won't create the new stubs. We want to be able to use new stubs but with the
-      # old haskell lib. FIXME
-      file.print("-- COMPILED WITH #{builder}\n")
-      file.print(make_haskell_bindings(functions))
-      file.print(haskell_str)
-      file.flush
-    end
-  end
-
-end
-
-
+#    rescue LoadError
+#      raise HaskellError, "loading #{libFile} failed:\n#{$!.to_s}" + 
+#        `nm #{libFile} 2>/dev/null` + "\n"
+#    end

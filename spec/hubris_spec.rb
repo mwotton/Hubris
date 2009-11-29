@@ -1,6 +1,7 @@
+# encoding: ASCII-8BIT
 load File.dirname(__FILE__) + '/spec_helper.rb'
 require "hubris"
-Hubris.add_packages %w(base bytestring)
+Hubris.add_packages %w(base)
 
 # # just want to check it's actually possible to load a library dynamically
 # describe "dlload" do
@@ -106,7 +107,7 @@ end
 describe 'Arrays' do
   it "can use arrays sensibly" do
     class ArrayTest
-      hubris :inline => "mylength :: [Value] -> Int; mylength [] = 0; mylength (_:xs) = 1 + mylength xs"
+      hubris :inline => "mylength :: [Int] -> Int; mylength [] = 0; mylength (_:xs) = 1 + mylength xs"
     end
     
     ArrayTest.new.mylength([1,2,3,4]).should eql(4)
@@ -127,6 +128,41 @@ describe 'Arrays' do
   end
 end
 
+describe 'MaybeOut' do
+  it "passes back maybes" do
+    class Maybe
+      hubris :inline => "foo:: Int -> Maybe Int; foo 1 = Just 1; foo _ = Nothing"
+    end
+    m=Maybe.new
+    m.foo(1).should == 1
+    m.foo(2).should == nil
+    lambda{ m.foo("blah") }.should raise_error(HaskellError)
+  end
+end
+describe "MaybeIn" do
+  it "takes in Maybes" do
+    class MaybeIn
+      hubris :inline => "foo:: Maybe Int -> Int; foo (Just n) = 2*n; foo Nothing = 0"
+    end
+    class MaybeLazy
+      hubris :inline => "foo:: Maybe Int -> Int; foo (Just _) = 1; foo Nothing = 0"
+    end
+    m=MaybeIn.new
+#    m.foo(1).should == 1
+#    m.foo(20).should == 1
+#    m.foo(nil).should == 2
+    lambda{ m.foo("blah") }.should raise_error(HaskellError)
+    # here's a tricky bit: in the previous example, we had to look at the value of the
+    # Maybe, so the exception got triggered.
+    # Here, however, we're not passing in a nil, so we get a "Just 'something'", and never
+    # deeply examine the something. Arguably, it would be less surprising if we always looked
+    # deeply into it, but it's up for debate. TODO
+    
+    lazy = MaybeLazy.new
+    lazy.foo("blah").should == 1
+  end
+end
+
 describe 'Hashes' do
   it "can move a Haskell map to ruby" do
     class HaskellMap
@@ -136,21 +172,22 @@ describe 'Hashes' do
     rh[3].should == 1
     rh[2].should == 2
     rh[1].should == 3
-    
   end
-end
-  #   it "handles hashes" do
-  #     t=Target.new
-  #     t.inline(<<EOF
-  # use_hash (T_HASH h) = case h ! (T_STRING "
-  # EOF
-  #              )
   
-  #   end
+  it "can move a ruby map to haskell" do
+    class RubyMap
+      hubris :inline => "import Data.Map; h :: Map Int Int -> Maybe Int; h m = Data.Map.lookup 10 m"
+    end
+    rb = RubyMap.new
+    rb.h({8 => 100, 2 => 7}).should eql(nil)
+    rb.h({10 => 100, 2 => 7}).should eql(100)
+  end
+  
+end
 
 
 
-describe "Target" do
+describe "Blocks" do
   
   it "can be called in a block" do
     class T2
@@ -161,22 +198,9 @@ describe "Target" do
       t.foo(x).should eql(0-x)
     end
   end
-  
-  # this appears not to work with GHC right now.
-  # I'm not actually even that convinced that this is a valuable feature. Thoughts?
-  #
-  # possible sensible behaviours
-  #  overwrite old behaviour silently
-  #  throw an exception when overwriting is attempted
-  #  print a warning
-  #  silently ignore the attempt (current behaviour)
-  #  (actually, sometimes you get the old one, sometimes you get the new one. SPOOKY.
-  #  ... ?
-  #
-  #  clearly, once I separate function binding from actual haskell compilation, this
-  #  problem goes away. Overwriting becomes the sane default, and the old haskell
-  #  just stops being referenced, so no linker name problems.
-  
+end
+
+describe "Overwrite" do
   it "can overwrite old functions" do
     class Overlapping
       hubris :inline => "myid::Int -> Int; myid i = i"
@@ -185,7 +209,7 @@ describe "Target" do
     t=Overlapping.new
     t.myid(1).should eql(2)
   end
-
+  
   
 end
 
@@ -200,7 +224,6 @@ describe "Exceptions" do
   end
 
   it "catches incomplete code unless you turn no_strict on" do
-    t=Target.new
     lambda {
       class Incomplete
         hubris :inline => "incomplete :: Int -> Bool; incomplete 1 = True"
@@ -213,6 +236,7 @@ describe "Exceptions" do
     }.should_not raise_error()
     
   end
+
 end
 
 describe 'Idempotence' do 
@@ -248,7 +272,7 @@ describe 'Realworld' do
   it "can handle the bytestring lib" do
     # system("rm /var/hubris/cache/Data.ByteString.bundle 2>/dev/null;
     # Hubrify Data.ByteString 2>/dev/null >/dev/null")
-  
+    puts "bytestring"
     # FIXME zencode module names properly
     class ByteString
       hubris :module => "Data.ByteString"
@@ -256,6 +280,21 @@ describe 'Realworld' do
     
     b = ByteString.new
     b.sort("zabcdfg").should == "abcdfgz"
+  end
+  
+  it "can import zlib" do
+    pending "Not doing the right thing with embedded nulls yet"
+    class ZLib
+      hubris :module => 'Codec.Compression.GZip', :packages => ['zlib', 'bytestring']
+    end
+    z=ZLib.new
+    w="osatnoensauhoestnuhoastuhoeatnuhosnueohnsauostneo"
+    puts w.encoding
+    x=z.compress(w)
+    x.each_byte {|c| print c, ' ' }
+    puts "length|#{x.length}|"
+    puts "second"
+    z.decompress(z.compress(w)).should eql(w)
   end
   
 end
