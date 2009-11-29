@@ -15,19 +15,23 @@ Stability:      Experimental
 extra-source-files: 
 Synopsis:       Support library for Hubris, the Ruby <=> Haskell bridge
 Description:    Support library for Hubris, the Ruby <=> Haskell bridge
+more info at http://github.com/mwotton/Hubris-Haskell
+short version: ./Setup configure --enable-shared --ghc-options=-dynamic --extra-include-dirs=<YOUR RUBY HEADERS> --extra-lib-dirs=<YOUR RUBY LIB LOCATION>
+
+If you omit any of those flags, it will seem to work then blow up at runtime.
+
 
 Library
 -- the ordering is critical, because Cabal doesn't do dependency analysis.
         Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild
--- so this is a really filthy hack.
         c-sources: cbits/rshim.c 
         includes:  cbits/rshim.h
         install-includes:  cbits/rshim.h
-
--- a proper fix for this would involve autoconf and I'm not feeling up to it.
-        include-dirs: cbits /opt/local/include/ruby-1.9.1/ 
-        extra-lib-dirs: /opt/local/lib
-       -- c2hsoptions: --cpp=gcc --cppopts=-E --cppopts=-xc
+        include-dirs: cbits
+        -- a proper fix for this would involve autoconf and I'm not feeling up to it.
+        -- best to pass the args on the command line.
+        --extra-include-dirs=/opt/local/include/ruby-1.9.1/ 
+        --extra-lib-dirs: /opt/local/lib
         extra-libraries: ruby
         build-depends:  ghc, Cabal>=1.7.4 && < 1.8, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, haskell-src-meta, hint
 
@@ -36,11 +40,10 @@ Executable Hubrify
   Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 1.8, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, haskell-src-meta, hint, process
   Other-Modules:     Language.Ruby.Hubris.Binding
   c-sources: cbits/rshim.c 
-  include-dirs: cbits /opt/local/include/ruby-1.9.1/ 
-  extra-lib-dirs: /opt/local/lib
+  include-dirs: cbits 
   extra-libraries: ruby
   -- This is bad form, apparently, and if i include it, ./Setup dist cries big fat tears,
   --  but you _really_ want a dynamic lib with Hubrify, or you'll get a truly
   -- huge binary (may not even link, I had problems with the iconv dependency from HSbase)
-  -- anyway, pass "--ghc-options=-dynamic" to ./Setup build, and you should be apples.
+  -- anyway, pass "--ghc-options=-dynamic" to ./Setup configure, and you should be apples.
   -- ghc-options: -dynamic
