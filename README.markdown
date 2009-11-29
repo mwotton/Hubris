@@ -94,16 +94,23 @@ Then get the Haskell support libraries installed
     # check that Hubrify is now in your path.
 
 Then the Ruby side
+    
+    # only if you haven't got gemcutter yet
+    sudo gem install gemcutter
+    sudo gem tumble
 
-    sudo gem install rake open4 rspec hubris
+    # and the actual package
+    sudo gem install hubris
 
+I've just built the gem - if it doesn't work, you can always go back
+to the manual method (but tell me, it _should_ work)
+    
+    sudo gem install rake rspec open4
     git clone git://github.com/mwotton/Hubris.git
-    cd Hubris/lib
+    cd Hubris/ext
     ruby extconf.rb && make
     cd ..
     spec .
-
-I'll gemify this soon too.
 
 
 ## Contributors
