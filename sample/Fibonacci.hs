@@ -7,8 +7,8 @@ import Maybe
 
 -- main = putStrLn "11"
 
-fibonacci :: Int -> Int
-fibonacci n = fibs !! n
+fibonacci :: Integer -> Integer
+fibonacci n = fibs !! (fromIntegral n)
   where fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
 
 -- local_map = Data.Map.fromList [(1,2), (3,4)]
