@@ -26,7 +26,7 @@ class File
 end
 
 module Hubris
-  VERSION = '0.0.2'
+  VERSION = '0.0.3'
   SO_CACHE = File.expand_path("/var/hubris/cache")
   HS_CACHE = File.expand_path("/var/hubris/source")
   require 'HubrisStubLoader'
