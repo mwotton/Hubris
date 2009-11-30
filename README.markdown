@@ -74,10 +74,19 @@ right?)
 
     wget http://www.haskell.org/ghc/dist/6.12.1-rc2/ghc-6.12.0.20091121-src.tar.bz2
     tar -jxvf ghc-6.12.0.20091121-src.tar.bz2
+    # If you're using Mac, there are some patches that need to be
+    # applied.
+    # GHC patch:
+    # http://hackage.haskell.org/trac/ghc/ticket/3550
+    # Cabal patch:
+    # http://hackage.haskell.org/trac/hackage/ticket/591
+
     cd ghc-6.12.0.20091121-src
     # adjust the argument to -j to your number of cores, and the prefix if you need to install somewhere else
     sh boot && ./configure --enable-shared --prefix=/usr/local && make    -j 4 && sudo make install
     # check ghc --version at the prompt tells you you're running 6.12
+
+
 
 Then get the Haskell support libraries installed
 
