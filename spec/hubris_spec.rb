@@ -347,4 +347,29 @@ describe 'Performance' do
       threads.each { |t| t.join }
     }.should_not raise_error
   end
+ 
+end
+
+describe "IO" do
+  it "can write a variable" do
+    class IOTest
+      hubris :inline =><<EOF
+import Data.IORef
+import System.IO.Unsafe
+ref :: IORef Int
+ref = unsafePerformIO $ newIORef 10
+
+readRef :: Value -> IO Int
+readRef _ = readIORef ref
+modify :: Int -> IO ()
+modify n = writeIORef ref n 
+EOF
+      
+    end
+    i = IOTest.new
+    i.readRef(nil).should == 10
+    i.modify(20)
+    i.readRef(nil).should == 20
+    
+  end
 end
