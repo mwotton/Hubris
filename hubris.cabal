@@ -1,5 +1,5 @@
 Name:                hubris
-Version:             0.0.1
+Version:             0.0.2
 Author:              Mark Wotton
 Maintainer:          mwotton@gmail.com
 Build-Type:          Simple
@@ -9,21 +9,24 @@ License-File:   LICENSE
 Build-Type:     Simple
 Author:         Mark Wotton <mwotton@gmail.com>
 Maintainer:     Mark Wotton <mwotton@gmail.com>
-bug-reports:    mailto:mwotton@gmail.com
+bug-reports:    http://github.com/mwotton/Hubris-Haskell/issues
 Category:       Language
 Stability:      Experimental
 extra-source-files: 
 Synopsis:       Support library for Hubris, the Ruby <=> Haskell bridge
-Description:    Support library for Hubris, the Ruby <=> Haskell bridge
-                more info at http://github.com/mwotton/Hubris-Haskell
-                short version: ./Setup configure --enable-shared --ghc-options=-dynamic --extra-include-dirs=<YOUR RUBY HEADERS> --extra-lib-dirs=<YOUR RUBY LIB LOCATION>
+Description:    Support library for Hubris, the Ruby to Haskell bridge
+                more info at <http://github.com/mwotton/Hubris-Haskell>
+                .
+                short version: ./Setup configure --enable-shared --ghc-options=-dynamic --extra-include-dirs=... --extra-lib-dirs=...
+                .
                 If you omit any of those flags, it will seem to work then blow up at runtime.
-
+                .
+                Anyway, this version strips the boilerplate that used to be necessary, and is intended to be used in conjunction with <http://github.com/mwotton/Hubris>.
 
 Library
--- the ordering is critical, because Cabal doesn't do dependency analysis.
+        -- the ordering is critical, because Cabal doesn't do dependency analysis.
         Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild, Includes
-        c-sources: cbits/rshim.c 
+        c-sources: cbits/rshim.c
         includes:  cbits/rshim.h
         install-includes:  cbits/rshim.h
         include-dirs: cbits
@@ -37,7 +40,7 @@ Library
 Executable Hubrify
   Main-is:           Hubrify.hs
   Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 1.9, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint, process
-  Other-Modules:     Language.Ruby.Hubris.Binding, Includes
+  Other-Modules:     Language.Ruby.Hubris.Binding
   c-sources: cbits/rshim.c 
   include-dirs: cbits 
   extra-libraries: ruby

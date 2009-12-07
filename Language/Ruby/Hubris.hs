@@ -23,12 +23,13 @@ import Prelude hiding(catch)
 import Monad hiding (when)
 import Data.Typeable
 
-wrap :: (Haskellable a, Show b, Rubyable b) => (a->b) -> (Value -> Value)
+wrap :: (Haskellable a, Rubyable b) => (a->b) -> (Value -> Value)
 wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell v)
                                   case r of
                                     Left (e::HubrisException) -> createException "Blah" `traces` "died in haskell"
                                     Right a                   -> return a
-
+-- wrapIO too? Is there a more generic way of doing this? would need a = a', b = IO c, so Rubyable b => Rubyable (IO c). (Throw away Show constraint, not necessary)
+                                    
 data HubrisException = HubrisException
   deriving(Show, Typeable)
 
@@ -57,6 +58,8 @@ instance Haskellable Int where
 instance Rubyable Int where
   toRuby i = int2fix i
 
+instance Rubyable a => Rubyable (IO a) where
+  toRuby a = unsafePerformIO (a >>= return . toRuby)
 instance Haskellable Integer where
   toHaskell v = case rubyType v of
                   RT_BIGNUM -> read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
@@ -102,7 +105,8 @@ instance Rubyable S.ByteString where
                                \(cs,len) -> rb_str_new (cs,len) `traces` ("sstrict back to ruby:" ++ (show $ S.unpack s))
                                                           
 
-
+instance Rubyable () where
+  toRuby () = toRuby True -- ???
 
 instance Haskellable L.ByteString where
   toHaskell v = L.fromChunks [toHaskell v]
