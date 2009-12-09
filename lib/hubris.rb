@@ -27,8 +27,9 @@ end
 
 module Hubris
   VERSION = '0.0.3'
-  SO_CACHE = File.expand_path("/var/hubris/cache")
-  HS_CACHE = File.expand_path("/var/hubris/source")
+  HUBRIS_DIR = ENV['HUBRIS_DIR'] || "/var/hubris"
+  SO_CACHE = File.expand_path(HUBRIS_DIR + "/cache")
+  HS_CACHE = File.expand_path(HUBRIS_DIR + "/source")
   require 'HubrisStubLoader'
   [SO_CACHE,HS_CACHE].each {|dir| FileUtils.mkdir_p(dir)}
   $:.push(SO_CACHE)
