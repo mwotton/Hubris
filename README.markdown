@@ -69,58 +69,7 @@ that's supported.
 
 ## Install
 
-First, we install GHC 6.12 RC2 (living on the cutting edge is fun,
-right?)
-
-    wget http://www.haskell.org/ghc/dist/6.12.1-rc2/ghc-6.12.0.20091121-src.tar.bz2
-    tar -jxvf ghc-6.12.0.20091121-src.tar.bz2
-    # If you're using Mac, there are some patches that need to be
-    # applied.
-    # GHC patch:
-    # http://hackage.haskell.org/trac/ghc/ticket/3550
-    # Cabal patch:
-    # http://hackage.haskell.org/trac/hackage/ticket/591
-
-    cd ghc-6.12.0.20091121-src
-    # adjust the argument to -j to your number of cores, and the prefix if you need to install somewhere else
-    sh boot && ./configure --enable-shared --prefix=/usr/local && make    -j 4 && sudo make install
-    # check ghc --version at the prompt tells you you're running 6.12
-
-
-
-Then get the Haskell support libraries installed
-
-    cabal install c2hs
-    # probably a better way of doing this, but this is how i build it.
-    cabal unpack hubris
-    cd hubris-0.0.2
-    # edit the --extra-include-dirs and --extra-lib-dirs to reflect
-    # your installation. You'll need the ruby headers installed -
-    # they're installed already in ports, and it's ruby1.9.dev on Ubuntu.
-    runhaskell Setup configure  --enable-shared --user --ghc-options=-dynamic --extra-include-dirs=/usr/local/include/ruby-1.9.1/ --extra-lib-dirs=/usr/local/lib/
-    runhaskell Setup build
-    runhaskell Setup install
-    # check that Hubrify is now in your path.
-
-Then the Ruby side
-    
-    # only if you haven't got gemcutter yet
-    sudo gem install gemcutter
-    sudo gem tumble
-
-    # and the actual package
-    sudo gem install hubris
-
-I've just built the gem - if it doesn't work, you can always go back
-to the manual method (but tell me, it _should_ work)
-    
-    sudo gem install rake rspec open4
-    git clone git://github.com/mwotton/Hubris.git
-    cd Hubris/ext
-    ruby extconf.rb && make
-    cd ..
-    spec .
-
+Better instructions for Linux are at http://wiki.github.com/mwotton/Hubris/installation-of-ghc-6121-on-ubuntu-910 and for Mac at http://wiki.github.com/mwotton/Hubris/installation-of-ghc-6121-on-mac-os-x
 
 ## Contributors
 
