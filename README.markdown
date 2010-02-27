@@ -69,7 +69,8 @@ that's supported.
 
 ## Install
 
-Better instructions for Linux are at http://wiki.github.com/mwotton/Hubris/installation-of-ghc-6121-on-ubuntu-910 and for Mac at http://wiki.github.com/mwotton/Hubris/installation-of-ghc-6121-on-mac-os-x
+Better instructions for [Linux]:http://wiki.github.com/mwotton/Hubris/installation-of-ghc-6121-on-ubuntu-910
+[Mac]: http://wiki.github.com/mwotton/Hubris/installation-of-ghc-6121-on-mac-os-x
 
 ## Contributors
 
