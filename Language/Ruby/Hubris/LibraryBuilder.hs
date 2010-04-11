@@ -76,7 +76,7 @@ genC exportable zmoduleName= unlines $
           ,"#include <stdlib.h>"
           ,"#define HAVE_STRUCT_TIMESPEC 1"
           ,"#include <ruby.h>"
---          ,"#define DEBUG 1"
+          ,"#define DEBUG 1"
           ,"#ifdef DEBUG"
           ,"#define eprintf printf"
           ,"#else"

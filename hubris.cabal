@@ -27,7 +27,7 @@ Library
         -- the ordering is critical, because Cabal doesn't do dependency analysis.
         Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild, Includes
         c-sources: cbits/rshim.c
-        includes:  cbits/rshim.h
+        -- includes:  cbits/rshim.h
         install-includes:  cbits/rshim.h
         include-dirs: cbits
         -- a proper fix for this would involve autoconf and I'm not feeling up to it.

@@ -62,12 +62,12 @@ instance Rubyable a => Rubyable (IO a) where
   toRuby a = unsafePerformIO (a >>= return . toRuby)
 instance Haskellable Integer where
   toHaskell v = case rubyType v of
-                  RT_BIGNUM -> read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
-                  RT_FIXNUM -> fromIntegral $ fix2int v
+                  RT_BIGNUM -> trace ("got a big") $ read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
+                  RT_FIXNUM -> trace("got a fix") $ fromIntegral $ fix2int v
                   _         -> throw HubrisException -- wonder if it's kosher to just let the pattern match fail...
 
 instance Rubyable Integer where
-  toRuby i = rb_str_to_inum (unsafePerformIO $ (newCAString $ show i) >>= rb_str_new2) 10 1
+  toRuby i = trace ("integer to ruby") $ rb_str_to_inum (unsafePerformIO $ (newCAString $ show i) >>= rb_str_new2) 10 1
 
 instance Haskellable Bool where
   toHaskell v = case rubyType v of

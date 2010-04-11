@@ -38,7 +38,7 @@ ghcBuild libFile immediateSource modName extra_sources c_sources args =
           -- eesh, this is awful...
           -- doOrDie $ System.system("gcc -c -I/opt/local/include/ruby-1.9.1 -o " ++ c_wrapper ++ " " ++ unwords c_sources)
           haskellSrcFile <- genHaskellFile immediateSource
-          noisySystem ghc $ ["--make", "-shared", "-dynamic",  "-o", libFile, "-optl-Wl,-rpath," ++ libdir,
+          noisySystem ghc $ ["--make", "-shared", "-dynamic", "-L"++libdir,  "-o", libFile, "-optl-Wl,-rpath," ++ libdir,
                              "-lHSrts-ghc" ++ Config.cProjectVersion, haskellSrcFile] ++
                              map ("-I"++) extraIncludeDirs
                              ++ extra_sources ++ c_sources ++ args

@@ -62,7 +62,7 @@ main = do
                  then ["-Wall", "-Werror","-fno-warn-unused-imports"]
                  else []
    -- putStrLn $ show $ optPackages o
-   res <- generateLib (optOutput o) srcs (optModule o) ghcArgs (optPackages o)
+   res <- generateLib (optOutput o) srcs (optModule o) ("-fPIC":ghcArgs) (optPackages o)
    -- when (optVerbose o) (putStr $unlines msgs)
    
    -- print res
