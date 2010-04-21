@@ -1,13 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances #-} 
 module Language.Ruby.Hubris where
 
-import Data.Word
+--import Data.Word
 import Data.Map as Map
 -- import Language.Ruby.Hubris.Binding
-import System.IO.Unsafe (unsafePerformIO)
-import Foreign.C.Types
+-- import System.IO.Unsafe (unsafePerformIO)
+--import Foreign.C.Types
 import Language.Ruby.Hubris.Binding
-import Control.Monad (forM)
+--import Control.Monad (forM)
 import Control.Applicative
 import Debug.Trace
 import Foreign.C.String
@@ -26,7 +26,7 @@ import Data.Typeable
 wrap :: (Haskellable a, Rubyable b) => (a->b) -> (Value -> Value)
 wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell v)
                                   case r of
-                                    Left (e::HubrisException) -> createException "Blah" `traces` "died in haskell"
+                                    Left (_e::HubrisException) -> createException "Blah" `traces` "died in haskell"
                                     Right a                   -> return a
 -- wrapIO too? Is there a more generic way of doing this? would need a = a', b = IO c, so Rubyable b => Rubyable (IO c). (Throw away Show constraint, not necessary)
                                     
@@ -36,11 +36,15 @@ data HubrisException = HubrisException
 instance Exception HubrisException
 
 -- utility stuff:
+sshow :: S.ByteString -> [Char]
 sshow s = Prelude.map w2c $S.unpack s
+lshow :: L.ByteString -> [Char]
 lshow s = Prelude.map w2c $L.unpack s
---traces = flip trace
-traces a b = a
 
+traces :: b -> String -> b
+traces = flip trace
+
+when :: Value -> RubyType -> a -> a
 when v b c = if (rubyType v == b)
                then c
                else throw HubrisException
@@ -66,7 +70,7 @@ instance Haskellable Integer where
                   RT_FIXNUM -> trace("got a fix") $ fromIntegral $ fix2int v
                   _         -> throw HubrisException -- wonder if it's kosher to just let the pattern match fail...
 
-instance Rubyable Integer where
+instance  Rubyable Integer where
   toRuby i = trace ("integer to ruby") $ rb_str_to_inum (unsafePerformIO $ (newCAString $ show i) >>= rb_str_new2) 10 1
 
 instance Haskellable Bool where
@@ -199,4 +203,3 @@ instance (Ord a, Eq a, Haskellable b, Haskellable a) => Haskellable (Map.Map a b
 --                          get_each
                          
 --   toHaskell _ = Nothing
-

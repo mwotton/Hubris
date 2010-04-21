@@ -5,7 +5,7 @@
 
 // did this really have to be a macro? BAD MATZ
 unsigned int rtype(VALUE obj);
-VALUE int2fix(int i);
+VALUE int2fix(long i);
 long fix2int(VALUE x);
 double num2dbl(VALUE x);
 unsigned int rb_ary_len(VALUE x);
