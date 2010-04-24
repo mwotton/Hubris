@@ -17,7 +17,7 @@ void safe_hs_init() {
   } 
 }
 
-void Init_HubrisStubLoader() {
+void Init_stub() {
   // don't do anything, we just want to make
   // sure that the other objects can see the
   // safe_hs_init symbols at the C level

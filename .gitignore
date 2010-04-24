@@ -1,5 +1,4 @@
 .jhci-hist
-stupid emacs lock files
 .#*
 jhc stuff
 hs.out_code.c
@@ -24,3 +23,11 @@ lib/RubyMap.o
 lib/rshim.o
 sample/tmp
 sample/tmp.old
+Makefile
+*.o
+*.bundle
+*.so
+*.dll
+pkg
+doc
+.DS_Store

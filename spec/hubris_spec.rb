@@ -3,20 +3,6 @@ load File.dirname(__FILE__) + '/spec_helper.rb'
 require "hubris"
 Hubris.add_packages %w(base)
 
-# # just want to check it's actually possible to load a library dynamically
-# describe "dlload" do
-#   it "actually builds and loads a C level dylib stupidly" do
-#     system "cd sample; make"
-#     `cd sample; ruby hsload.rb`.chomp.should eql("144")
-#   end
-# end
-
-class Target
-  def foo_local
-    14
-  end
-end
-
 Signal.trap("INT", 'EXIT');
 
 describe "Target" do  
@@ -41,16 +27,16 @@ foo False = True"; end
   end
 
 
-  #   it "handles booleans" do
-  #     class Bar
-  #       hubris :inline => "my_negate True = False;my_negate False = True", :no_strict => true
-  #     end
-  #     t = Bar.new
-  #     # puts t.methods
-  #     t.my_negate(false).should eql(true)
-  #     t.my_negate(true).should eql(false)
-  #     lambda{ t.my_negate("Banana")}.should raise_error
-  #   end
+  it "handles booleans" do
+    class Bar
+      hubris :inline => "my_negate True = False;my_negate False = True", :no_strict => true
+    end
+    t = Bar.new
+    # puts t.methods
+    t.my_negate(false).should eql(true)
+    t.my_negate(true).should eql(false)
+    lambda{ t.my_negate("Banana")}.should raise_error
+  end
   
   it "handles doubles" do
     class Doubler
@@ -72,14 +58,31 @@ describe "Strings" do
 end
 
 describe "BigInt" do
-  it "handles BigInts" do
+  context "BigInts" do
     class Bigint
       hubris :inline => "big_inc :: Integer -> Integer; big_inc i = i + 1"
     end
-    b = Bigint.new
-    b.big_inc(10000000000000000).should eql(10000000000000001)
-    b.big_inc(1).should eql(2)
   end
+  before(:each) do
+    @b = Bigint.new
+  end
+
+  it "handles smalls" do
+    @b.big_inc(1).should eql(2)
+  end
+
+  it "handles really big ints" do
+    @b.big_inc(1000000000000000000000000).should eql(1000000000000000000000001)
+  end
+
+  it "handles ints just before the border" do
+    @b.big_inc(2147483647).should == 2147483648
+  end
+  
+  it "handles > int but < bigint" do
+    @b.big_inc(2147483648).should == 2147483649
+  end
+
 end
 
 describe 'Multiple' do
@@ -97,10 +100,7 @@ describe 'Multiple' do
     # and it doesn't wipe out other methods on the class
     t.foo_local.should eql(14)
     t.incr(3).should eql(4)
-    # FIXME this one is waiting for support of Control.Exception in
-    # JHC
-    # lambda { t.mydouble(2.3)}.should raise_error(HaskellError)
-    # Fooclever.mydouble(2.3).should raise_error(RuntimeError)
+    lambda { t.mydouble(2.3)}.should raise_error(HaskellError)
   end
 end
 
@@ -148,9 +148,9 @@ describe "MaybeIn" do
       hubris :inline => "foo:: Maybe Int -> Int; foo (Just _) = 1; foo Nothing = 0"
     end
     m=MaybeIn.new
-#    m.foo(1).should == 1
-#    m.foo(20).should == 1
-#    m.foo(nil).should == 2
+    m.foo(1).should == 2
+    m.foo(20).should == 40
+    m.foo(nil).should == 0
     lambda{ m.foo("blah") }.should raise_error(HaskellError)
     # here's a tricky bit: in the previous example, we had to look at the value of the
     # Maybe, so the exception got triggered.
@@ -158,8 +158,8 @@ describe "MaybeIn" do
     # deeply examine the something. Arguably, it would be less surprising if we always looked
     # deeply into it, but it's up for debate. TODO
     
-    lazy = MaybeLazy.new
-    lazy.foo("blah").should == 1
+    #lazy = MaybeLazy.new
+    #lazy.foo("blah").should == 1
   end
 end
 
