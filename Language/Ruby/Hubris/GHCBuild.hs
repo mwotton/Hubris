@@ -7,7 +7,7 @@ import GHC.Paths
 import Outputable
 import StringBuffer
 import System.Process
-import Control.Monad(forM_)
+import Control.Monad(forM_,guard)
 import System.IO(hPutStr, hClose, openTempFile)
 import System( exitWith, system)
 import System.Exit
@@ -18,35 +18,23 @@ newtype GHCOptions = GHCOptions { strict :: Bool }
 defaultGHCOptions = GHCOptions { strict = True }
 type Filename = String
 
-genHaskellFile :: String -> IO String
-genHaskellFile code = do (name, handle) <- openTempFile "/tmp" "hubris_XXXXX.hs"
-                         hPutStr handle code
-                         hClose handle
-                         return name
 
--- sh = showSDoc . ppr
--- this one's a bit tricky: we _could_ use the GHC api, but i don't care too much.
--- let's keep it simple.
---
--- ok, new plan: handling it the filthy way is awful.
---
--- We do need rshim.o, but it's packaged in the hubris lib, with any luck.
+withFile :: String -> IO String
+withFile code = do (name, handle) <- openTempFile "/tmp" "hubris_XXXXX.hs"
+                   hPutStr handle code
+                   hClose handle
+                   return name
+
 ghcBuild :: Filename -> String -> String -> [Filename] -> [Filename] -> [String]-> IO (Maybe (ExitCode,String))
 ghcBuild libFile immediateSource modName extra_sources c_sources args =
-    do -- putStrLn ("modname is " ++ modName)
-          -- let c_wrapper = modName ++ ".aux.o"
-          -- eesh, this is awful...
-          -- doOrDie $ System.system("gcc -c -I/opt/local/include/ruby-1.9.1 -o " ++ c_wrapper ++ " " ++ unwords c_sources)
-          haskellSrcFile <- genHaskellFile immediateSource
-          noisySystem ghc $ ["--make", "-shared", "-dynamic",  "-o",libFile,"-fPIC", "-optl-Wl,-rpath," ++ libdir,
+    do haskellSrcFile <- withFile immediateSource
+       noisySystem ghc $ ["--make", "-shared", "-dynamic",  "-o",libFile,"-fPIC", "-L" ++ libdir,"-optl-Wl,-rpath," ++ libdir,
                              "-lHSrts-ghc" ++ Config.cProjectVersion, haskellSrcFile] ++
                              map ("-I"++) extraIncludeDirs
                              ++ extra_sources ++ c_sources ++ args
 
 noisySystem :: String -> [String] -> IO (Maybe (ExitCode, String))
-noisySystem cmd args = 
-    do putStrLn $ unwords (cmd:args)
-       (errCode, out, err) <- readProcessWithExitCode cmd args ""
-       return $ if (errCode == ExitSuccess)
-              then Nothing
-              else Just (errCode, unlines ["output: " ++ out, "error: " ++ err])
+noisySystem cmd args = do putStrLn $ unwords (cmd:args)
+                          (errCode, out, err) <- readProcessWithExitCode cmd args ""
+                          return $ guard (errCode /= ExitSuccess) >> 
+                            Just (errCode, unlines ["output: " ++ out, "error: " ++ err])

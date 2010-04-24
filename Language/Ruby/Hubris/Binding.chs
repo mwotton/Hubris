@@ -39,7 +39,7 @@ rubyType = toEnum . rtype
 constToRuby :: RubyConst -> Value
 constToRuby = fromIntegral . fromEnum 
 --  RUBY_VERSION_CODE <= 187
-#if 0
+#if 1
 data RubyConst  = RUBY_Qfalse 
                 | RUBY_Qtrue  
                 | RUBY_Qnil   
@@ -98,79 +98,6 @@ foreign import ccall safe "intern.h rb_hash_aref" rb_hash_aref :: Value -> Value
 
 createException :: String -> IO Value
 createException s = newCAString s >>= buildException --  ("puts HaskellError.methods(); HaskellError.new") >>= rb_eval_string
-
-
-
--- data RValue = T_NIL  
---             | T_FLOAT Double
---             | T_STRING Value
-
---             -- List is non-ideal. Switch to uvector? Array? There's always going
---             -- to be an extraction step to pull the RValues out.
---             | T_ARRAY [RValue]
---             | T_FIXNUM Int 
---             | T_HASH  Value --  Int -- definitely FIXME - native ruby hashes, or going to transliterate into Data.Map?
---             | T_BIGNUM Integer    
-
---             -- technically, these are mapping over the types True and False,
---             -- I'm going to treat them as values, though.
---             | T_TRUE  
---             | T_FALSE      
---             | T_OBJECT Value
---             | T_CLASS  Value
--- --            | T_EXCEPTION String
---             | T_SYMBOL Word -- interned string
---               deriving (Eq, Show)
--- These are the other basic Ruby structures that we're not handling yet.
---          | T_REGEXP     
---          | T_FILE
---          | T_STRUCT     
---          | T_DATA       
-
-
---          | T_MODULE     
--- -- leaky as hell
--- fromRVal :: RValue -> Value
--- fromRVal r = case r of
---            T_FLOAT d -> rb_float_new d
---            -- need to take the address of the cstr, just cast it to a value
---            -- sadly no bytestrings yet - unpack it to a list. yeah it's ugly.
---            T_STRING str -> str --  unsafePerformIO $ newCAString str >>= rb_str_new2
---            T_FIXNUM i -> int2fix i
-
---            -- so this is just bizarre - there's no boolean type. True and False have their own types
---            -- as well as their own values.
---            T_TRUE     -> constToRuby RUBY_Qtrue
---            T_FALSE    -> constToRuby RUBY_Qfalse
---            T_NIL      -> constToRuby RUBY_Qnil
---            T_HASH h   -> h
---            T_ARRAY l  -> unsafePerformIO $ do
---                            ary <- rb_ary_new2 $ fromIntegral $ length l
---                            mapM_ (rb_ary_push ary . fromRVal) l
---                            return ary
---            T_OBJECT v -> v
---  --          T_CLASS v -> v
---            T_BIGNUM b -> rb_str_to_inum (unsafePerformIO $ (newCAString $ show b) >>= rb_str_new2) 10 1
---            _          -> error "sorry, haven't implemented that yet."
-
-
-
--- fromVal :: Value -> RValue
--- fromVal v = case target of
---                RT_NIL -> T_NIL
---                RT_FIXNUM -> T_FIXNUM $ fix2int v
---                RT_STRING -> T_STRING v -- $ unsafePerformIO $ str2cstr >>= peekCString 
---                RT_FLOAT ->  T_FLOAT $ num2dbl v
---                RT_BIGNUM -> T_BIGNUM $ read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
---                RT_TRUE -> T_TRUE
---                RT_FALSE -> T_FALSE
---                RT_HASH  -> T_HASH v
---                RT_ARRAY -> T_ARRAY $ map fromVal $ unsafePerformIO  $ mapM (rb_ary_entry v . fromIntegral) [0..(rb_ary_len v) - 1]
---                RT_OBJECT -> T_OBJECT v
--- --               RT_CLASS -> T_CLASS v
---                _ -> error ("didn't work: " ++ show target)
---       where target :: RubyType
---             target = toEnum $ rtype v
 
 
 

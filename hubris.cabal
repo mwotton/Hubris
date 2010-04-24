@@ -17,7 +17,7 @@ Synopsis:       Support library for Hubris, the Ruby <=> Haskell bridge
 Description:    Support library for Hubris, the Ruby to Haskell bridge
                 more info at <http://github.com/mwotton/Hubris-Haskell>
                 .
-                short version: ./Setup configure --enable-shared --ghc-options=-dynamic --extra-include-dirs=... --extra-lib-dirs=...
+                short version: ./Setup configure --extra-include-dirs=... --extra-lib-dirs=...
                 .
                 If you omit any of those flags, it will seem to work then blow up at runtime.
                 .
@@ -43,9 +43,4 @@ Executable Hubrify
   Other-Modules:     Language.Ruby.Hubris.Binding
   c-sources: cbits/rshim.c 
   include-dirs: cbits 
-  extra-libraries: ruby1.9
-  -- This is bad form, apparently, and if i include it, ./Setup dist cries big fat tears,
-  --  but you _really_ want a dynamic lib with Hubrify, or you'll get a truly
-  -- huge binary (may not even link, I had problems with the iconv dependency from HSbase)
-  -- anyway, pass "--ghc-options=-dynamic" to ./Setup configure, and you should be apples.
-  -- ghc-options: -dynamic
+  extra-libraries: ruby1.8

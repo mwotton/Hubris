@@ -31,9 +31,8 @@ generateLib libFile sources moduleName buildArgs packages = do
   -- set up the static args once  
 --  GHC.parseStaticFlags $ map noLoc $ words $ "-dynamic -fPIC" ++ unwords (map ("-package "++) ("hubris":packages)) 
   -- don't think i need dynamic or PIC - we're not generating machine code.
-  GHC.parseStaticFlags $ map noLoc $ map ("-package "++) ("hubris":packages)) 
+  GHC.parseStaticFlags $ map noLoc $ map ("-package "++) ("hubris":packages)
 
-  -- let libFile = zenc ("libHubris_" ++ moduleName))
   s <- generateSource sources moduleName
   case s of
     Left s -> return $ Left ("HINT error: " ++ show s)
@@ -43,8 +42,8 @@ generateLib libFile sources moduleName buildArgs packages = do
        putStrLn "C:"
        putStrLn c
 
-       bindings <- genCFile c -- should really delete afterwards.
-       res <- ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources [bindings] buildArgs
+       c_sources <- genCFile c -- should really delete afterwards.
+       res <- ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources [c_sources] buildArgs
        
        return (case res of
                  Nothing -> Right libFile
@@ -117,7 +116,7 @@ wrapper f = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
                               ,"  eprintf(\""++f++" has been called\\n\");"
                               ,"  VALUE res = hubrish_" ++ f ++"(v);"
                               ,"  eprintf(\"hubrish "++f++" has been called\\n\");"
-                              ,"  return res;"
+--                              ,"  return res;"
                               ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
                               ,"    eprintf(\""++f++" has provoked an exception\\n\");"                               
                               ,"    rb_exc_raise(res);"
