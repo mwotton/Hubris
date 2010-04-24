@@ -38,27 +38,10 @@ ghcBuild libFile immediateSource modName extra_sources c_sources args =
           -- eesh, this is awful...
           -- doOrDie $ System.system("gcc -c -I/opt/local/include/ruby-1.9.1 -o " ++ c_wrapper ++ " " ++ unwords c_sources)
           haskellSrcFile <- genHaskellFile immediateSource
-          noisySystem ghc $ ["--make", "-shared", "-dynamic", "-L"++libdir,  "-o", libFile, "-optl-Wl,-rpath," ++ libdir,
+          noisySystem ghc $ ["--make", "-shared", "-dynamic",  "-o",libFile,"-fPIC", "-optl-Wl,-rpath," ++ libdir,
                              "-lHSrts-ghc" ++ Config.cProjectVersion, haskellSrcFile] ++
                              map ("-I"++) extraIncludeDirs
                              ++ extra_sources ++ c_sources ++ args
---           defaultErrorHandler defaultDynFlags $ do
---           res <- runGhc (Just libdir) $ do
---             dflags <- getSessionDynFlags
-
---             (newflags, leftovers, warnings) <- GHC.parseDynamicFlags dflags 
---                                                $ map noLoc $ [ "-shared", "-o",libFile,"-optl-Wl,-rpath," ++ libdir, 
---                                                               "-lHSrts-ghc" ++ Config.cProjectVersion]
---             trace ("left2: " ++ sh leftovers) $ trace ("warns2: " ++ (sh warnings)) $ setSessionDynFlags newflags
-
---             forM_ (haskellSrcFile:extra_sources)  (\file -> guessTarget file Nothing >>= addTarget) 
-
---             load LoadAllTargets
---           -- doOrDie $ System.system("ld -dylib -flat_namespace -o " ++ libFile ++ " " ++ unwords ["foo"++ libFile, c_wrapper])
---           print res
---           return (case res of
---                   Succeeded -> True
---                   _ -> False)
 
 noisySystem :: String -> [String] -> IO (Maybe (ExitCode, String))
 noisySystem cmd args = 
@@ -67,9 +50,3 @@ noisySystem cmd args =
        return $ if (errCode == ExitSuccess)
               then Nothing
               else Just (errCode, unlines ["output: " ++ out, "error: " ++ err])
-
--- doOrDie :: IO ExitCode -> IO ()
--- doOrDie action = do res <- action
---                     case res of
---                       ExitSuccess -> return ()
---                       i -> exitWith i

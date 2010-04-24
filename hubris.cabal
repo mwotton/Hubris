@@ -43,7 +43,7 @@ Executable Hubrify
   Other-Modules:     Language.Ruby.Hubris.Binding
   c-sources: cbits/rshim.c 
   include-dirs: cbits 
-  extra-libraries: ruby
+  extra-libraries: ruby1.9
   -- This is bad form, apparently, and if i include it, ./Setup dist cries big fat tears,
   --  but you _really_ want a dynamic lib with Hubrify, or you'll get a truly
   -- huge binary (may not even link, I had problems with the iconv dependency from HSbase)

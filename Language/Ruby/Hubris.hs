@@ -22,7 +22,7 @@ import Control.Exception
 import Prelude hiding(catch)
 import Monad hiding (when)
 import Data.Typeable
-
+						
 wrap :: (Haskellable a, Rubyable b) => (a->b) -> (Value -> Value)
 wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell v)
                                   case r of
@@ -32,6 +32,7 @@ wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell
                                     
 data HubrisException = HubrisException
   deriving(Show, Typeable)
+
 
 instance Exception HubrisException
 

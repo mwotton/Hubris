@@ -29,7 +29,9 @@ genCFile code = do (name, handle) <- openTempFile "/tmp" "hubris_interface_XXXXX
 generateLib :: Filename -> [Filename] -> ModuleName -> [String] -> [String] -> IO (Either Filename String)
 generateLib libFile sources moduleName buildArgs packages = do
   -- set up the static args once  
-  GHC.parseStaticFlags $ map noLoc $ words $ "-dynamic -fPIC" ++ unwords (map ("-package "++) ("hubris":packages)) 
+--  GHC.parseStaticFlags $ map noLoc $ words $ "-dynamic -fPIC" ++ unwords (map ("-package "++) ("hubris":packages)) 
+  -- don't think i need dynamic or PIC - we're not generating machine code.
+  GHC.parseStaticFlags $ map noLoc $ map ("-package "++) ("hubris":packages)) 
 
   -- let libFile = zenc ("libHubris_" ++ moduleName))
   s <- generateSource sources moduleName
@@ -114,6 +116,8 @@ wrapper :: String -> String
 wrapper f = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
                               ,"  eprintf(\""++f++" has been called\\n\");"
                               ,"  VALUE res = hubrish_" ++ f ++"(v);"
+                              ,"  eprintf(\"hubrish "++f++" has been called\\n\");"
+                              ,"  return res;"
                               ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
                               ,"    eprintf(\""++f++" has provoked an exception\\n\");"                               
                               ,"    rb_exc_raise(res);"
