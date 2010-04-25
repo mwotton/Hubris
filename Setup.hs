@@ -7,7 +7,8 @@ import qualified Distribution.PackageDescription as D
 import Distribution.Verbosity
 import System.Directory
 import System.Process
-
+import Maybe
+import qualified Distribution.ModuleName as Modname
 main = do
   includeDir <- readProcess "ruby" ["-rrbconfig", "-e", "print RbConfig::CONFIG['archdir']"] ""
   defaultMainWithHooks (hooks includeDir)
@@ -20,6 +21,10 @@ hooks includeDir = simpleUserHooks
       -- FILTHY HACK
       writeFile "dist/build/autogen/Includes.hs" ("module Includes where\nextraIncludeDirs=[\"" ++ includeDir++"\"]") -- show (configExtraIncludeDirs flags))
       return D.emptyHookedBuildInfo,
-   confHook = \ info flags ->  (confHook simpleUserHooks) info (flags { configSharedLib = Flag True, configExtraIncludeDirs = [includeDir] })
+   confHook = \ info flags ->  (confHook simpleUserHooks) info (flags { configSharedLib = Flag True, configExtraIncludeDirs = [includeDir] }),
+   sDistHook = \ pkg lbi hooks flags -> let lib = fromJust $ D.library pkg
+                                            modules = filter (/= Modname.fromString "Includes") $ D.exposedModules lib
+                                            pkg' = pkg { D.library = Just $ lib { D.exposedModules = modules } }   
+                                        in sDistHook simpleUserHooks pkg' lbi hooks flags  
 
   }

@@ -1,5 +1,5 @@
 Name:                hubris
-Version:             0.0.2
+Version:             0.0.3
 Author:              Mark Wotton
 Maintainer:          mwotton@gmail.com
 Build-Type:          Simple
@@ -16,10 +16,6 @@ extra-source-files:
 Synopsis:       Support library for Hubris, the Ruby <=> Haskell bridge
 Description:    Support library for Hubris, the Ruby to Haskell bridge
                 more info at <http://github.com/mwotton/Hubris-Haskell>
-                .
-                short version: ./Setup configure --extra-include-dirs=... --extra-lib-dirs=...
-                .
-                If you omit any of those flags, it will seem to work then blow up at runtime.
                 .
                 Anyway, this version strips the boilerplate that used to be necessary, and is intended to be used in conjunction with <http://github.com/mwotton/Hubris>.
 
