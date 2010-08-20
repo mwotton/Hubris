@@ -17,6 +17,8 @@ class Target
   end
 end
 
+puts "hi!"
+
 Signal.trap("INT", 'EXIT');
 
 describe "Target" do  
@@ -72,13 +74,25 @@ describe "Strings" do
 end
 
 describe "BigInt" do
-  it "handles BigInts" do
+  context "BigInts" do
     class Bigint
       hubris :inline => "big_inc :: Integer -> Integer; big_inc i = i + 1"
     end
-    b = Bigint.new
-    b.big_inc(10000000000000000).should eql(10000000000000001)
-    b.big_inc(1).should eql(2)
+  end
+  before(:each) do
+    @b = Bigint.new
+  end
+
+  it "handles smalls" do
+    @b.big_inc(1).should eql(2)
+  end
+
+  it "handles really big ints" do
+    @b.big_inc(1000000000000000000000000).should eql(1000000000000000000000001)
+  end
+  
+  it "handles > int but < bigint" do
+    @b.big_inc(1000000000000000000).should eql(1000000000000000001)
   end
 end
 
