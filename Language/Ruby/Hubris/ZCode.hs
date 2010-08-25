@@ -1,6 +1,6 @@
 {-# LANGUAGE PatternGuards #-}
 
-module Language.Ruby.Hubris.ZCode (zenc,zdec) where
+module Language.Ruby.Hubris.ZCode (zenc,zdec,Zname(..)) where
 
 import Data.Char
 import Data.Ix
@@ -40,9 +40,9 @@ zemap = M.fromList $
 zdmap :: M.Map String Char
 zdmap = M.fromList . map (\(a, b) -> (b, a)) . M.toList $ zemap
 
-zenc, zdec :: String -> String
-
-zenc = concatMap (\c -> M.findWithDefault (z c) c zemap)
+newtype Zname = Zname String
+zenc :: String -> Zname
+zenc s = Zname $ concatMap (\c -> M.findWithDefault (z c) c zemap) s
     where
     z c
         | any (($ c) . inRange) [('a', 'y'), ('A', 'Z'), ('0', '9')] =
@@ -54,6 +54,7 @@ zenc = concatMap (\c -> M.findWithDefault (z c) c zemap)
             in
             'z' : p s
 
+zdec :: String -> String
 zdec "" = ""
 zdec [c] = [c]
 zdec (c : cs@(c' : cs'))

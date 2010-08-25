@@ -30,20 +30,24 @@ Library
         -- includes:  cbits/rshim.h
         install-includes:  cbits/rshim.h
         include-dirs: cbits
+        cc-options: -U__BLOCKS__ -DHAVE_SNPRINTF
+        extra-libraries: ruby
         -- a proper fix for this would involve autoconf and I'm not feeling up to it.
         -- best to pass the args on the command line.
         --extra-include-dirs=/opt/local/include/ruby-1.9.1/ 
         --extra-lib-dirs: /opt/local/lib
         extra-libraries: ruby
-        build-depends:  ghc, Cabal>=1.7.4 && < 1.9, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint
+        build-depends:  ghc, Cabal>=1.7.4 && < 2.0, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint
 
 Executable Hubrify
   Main-is:           Hubrify.hs
-  Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 1.9, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint, process
+  Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 2.0, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint, process
   Other-Modules:     Language.Ruby.Hubris.Binding
   c-sources: cbits/rshim.c 
   include-dirs: cbits 
-  extra-libraries: ruby1.9
+  cc-options: -U__BLOCKS__ -DHAVE_SNPRINTF
+  extra-libraries: ruby
+  -- extra-libraries: ruby1.9
   -- This is bad form, apparently, and if i include it, ./Setup dist cries big fat tears,
   --  but you _really_ want a dynamic lib with Hubrify, or you'll get a truly
   -- huge binary (may not even link, I had problems with the iconv dependency from HSbase)

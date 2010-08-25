@@ -1,79 +1,88 @@
-{-# LANGUAGE TemplateHaskell, QuasiQuotes #-}
+
+{-# LANGUAGE TemplateHaskell, QuasiQuotes, ScopedTypeVariables #-}
 module Language.Ruby.Hubris.LibraryBuilder (generateLib) where
-import Language.Ruby.Hubris.ZCode (zenc, zdec)
 import Language.Ruby.Hubris
 import Language.Haskell.Interpreter
 -- import Language.Haskell.Meta.QQ.HsHere
 import Language.Ruby.Hubris.GHCBuild
 
 import List(intersperse)
+import Data.List(intercalate)
 import qualified Debug.Trace
+import Control.Applicative
 import Control.Monad
 import Control.Monad.Error.Class
+import Data.Maybe(catMaybes)
 
 import GHC(parseStaticFlags, noLoc)
 import System.IO(hPutStr, hClose, openTempFile)
 import System.Exit
-import Language.Ruby.Hubris.ZCode (zenc,zdec)
+import Language.Ruby.Hubris.ZCode (zenc,Zname(..))
 
 type Filename = String
-trace a b = b
+dotrace a b = b
 
--- argh, this is ugly. should be a withTempFile construct of some kind.
-genCFile :: String -> IO String
-genCFile code = do (name, handle) <- openTempFile "/tmp" "hubris_interface_XXXXX.c"
-                   hPutStr handle code
-                   hClose handle
-                   return name
+-- weirdly, mapMaybeM doesn't exist.
+mapMaybeM :: (Functor m, Monad m) => (a -> m (Maybe b)) -> [a] -> m [b]
+mapMaybeM func ls  = catMaybes <$> (sequence $ map func ls)
 
 generateLib :: Filename -> [Filename] -> ModuleName -> [String] -> [String] -> IO (Either Filename String)
 generateLib libFile sources moduleName buildArgs packages = do
   -- set up the static args once  
---  GHC.parseStaticFlags $ map noLoc $ words $ "-dynamic -fPIC" ++ unwords (map ("-package "++) ("hubris":packages)) 
-  -- don't think i need dynamic or PIC - we're not generating machine code.
-  GHC.parseStaticFlags $ map noLoc $ map ("-package "++) ("hubris":packages)) 
+  GHC.parseStaticFlags $ map noLoc $ map ("-package "++) ("hubris":packages)
 
-  -- let libFile = zenc ("libHubris_" ++ moduleName))
   s <- generateSource sources moduleName
   case s of
-    Left s -> return $ Left ("HINT error: " ++ show s)
-    Right Nothing -> return $ Left("no functions found!")
-    Right (Just (c,mod)) -> do
-       putStrLn mod
-       putStrLn "C:"
-       putStrLn c
+     Right (c,mod) -> do bindings <- withTempFile "hubris_interface_XXXXX.c" c
+                         ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources [bindings] buildArgs
+     Left x -> return . Left $ show x
+                                            
+type Funcname = String               
+type Wrapper = String
 
-       bindings <- genCFile c -- should really delete afterwards.
-       res <- ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources [bindings] buildArgs
-       
-       return (case res of
-                 Nothing -> Right libFile
-                 Just (code,str) -> Left $ "code: " ++ show code ++"\nerr:" ++ str)
+
+
+arity :: String -> InterpreterT IO (Maybe Int)
+arity func = arity' 0 func
+  where cutoff = 20                             
+        arity' tries func
+          | tries > cutoff = return Nothing
+          | otherwise = do ok <- typeChecks (func ++ " `asTypeOf` (\\_ -> undefined)")
+                           if ok
+                             then arity' (1+tries) ("(" ++ func ++ " undefined)")
+                             else return (Just tries)
+
+-- ok, let's see if we can come up with an expression of the right type
+exportable ::  String -> String -> InterpreterT IO (Maybe (Funcname, Int, Wrapper))
+exportable moduleName func = do args <- arity qualName
+                                case args of
+                                  Nothing -> return Nothing
+                                  Just i -> do let wrapped = genWrapper (qualName,i)
+                                               typeChecks (wrapped ++ " = " ++ rubyVal) >>= \x -> (return $ guard x >> return (func,i,wrapped))
+  where qualName = moduleName ++ "." ++ func
+        rubyVal = "(fromIntegral $ fromEnum $ Language.Ruby.Hubris.Binding.RUBY_Qtrue)"
+        
+                                     
 
 generateSource :: [Filename] ->   -- optional haskell source to load into the interpreter
                    ModuleName ->   -- name of the module to build a wrapper for
-                   IO (Either InterpreterError (Maybe (String,String)))
+                   IO (Either InterpreterError (String,String))
 generateSource sources moduleName = runInterpreter $ do
-         let zmoduleName = zenc moduleName
          loadModules sources
-         setImportsQ $ map (\x->(x,Just x)) $ ("Language.Ruby.Hubris"):("Language.Ruby.Hubris.Binding"):moduleName:[]
-         functions <- getFunctions moduleName
-         say $ "Candidates: " ++ (show functions)
-       -- ok, let's see if we can come up with an expression of the right type
-
-
-         exportable  <- filterM (\func -> do let rubyVal ="(fromIntegral $ fromEnum $ Language.Ruby.Hubris.Binding.RUBY_Qtrue)"
-                                             let f = "Language.Ruby.Hubris.wrap " ++ moduleName ++"." ++func ++" " ++ rubyVal
-                                             say f
-                                             (typeOf f >>= \n -> say $ "type of wrap." ++ func ++ " is " ++ show n) 
-                                                     `catchError` (say . show)
-                                             typeChecks (f ++ "==" ++ rubyVal )) functions
-
-         say $ "Exportable: " ++ (show exportable)
-         return $ guard (not $ null exportable) >> return (genC exportable zmoduleName ,genHaskell exportable moduleName )                      
+         setImportsQ $ [(mod,Just mod) | mod <- ["Language.Ruby.Hubris","Language.Ruby.Hubris.Binding",moduleName]]
+         funcs <- getFunctions moduleName 
+         say ("Candidates: " ++ show funcs)
+         exports :: [(Funcname, Int,  Wrapper)] <- mapMaybeM (exportable moduleName) funcs
+         say ("Exportable: " ++ show exports)
+         return (undefined, undefined)
+         return (genC [(a,b) | (a,b,_) <- exports] (zenc moduleName),
+                 unlines (haskellBoilerplate moduleName:[wrapper | (_,_,wrapper) <- exports]))
                           
-genC :: [String] -> String -> String
-genC exportable zmoduleName= unlines $ 
+getFunctions moduleName = (\ x -> [a |Fun a <- x]) <$> getModuleExports moduleName
+
+
+genC :: [(String,Int)] -> Zname -> String
+genC exports (Zname zmoduleName) = unlines $ 
          ["#include <stdio.h>"
           ,"#include <stdlib.h>"
           ,"#define HAVE_STRUCT_TIMESPEC 1"
@@ -85,59 +94,68 @@ genC exportable zmoduleName= unlines $
           ,"int eprintf(const char *f, ...){}"
           ,"#endif"
          ] ++
-         map forwardDecl exportable ++
-         map wrapper exportable ++
+--         map (("VALUE hubrish_"++) . (++"(VALUE);")) exports ++
+--         map (("VALUE hubrish_"++) . (++"(VALUE);")) exports ++
+         map cWrapper exports ++
          ["extern void safe_hs_init();"
          ,"extern VALUE Exports;"
          ,"void Init_" ++ zmoduleName ++ "(){"
-         ,"  eprintf(\"loading\\n\");"
+         ,"  eprintf(\"loading " ++ zmoduleName ++ "\\n\");"
          ,"  VALUE Fake = Qnil;"
          ,"  safe_hs_init();"
          ,"  Fake = rb_define_module_under(Exports, \"" ++ zmoduleName ++ "\");"
-         ,"  eprintf(\"defined module " ++ rubyName ++ ":%p\\n\", Fake);"
-         ] ++ map def exportable ++  ["}"]
-  where rubyName = "Hubris::Exports::" ++ zmoduleName
+         ] ++ map cDef exports ++  ["}"]
+  where
+    cWrapper :: (String,Int) -> String
+    cWrapper (f,arity) = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
+                                         ,"  eprintf(\""++f++" has been called\\n\");"
+                               -- also needs to curry on the ruby side
 
-genHaskell exportable moduleName = unlines $ 
-                             ["{-# LANGUAGE ForeignFunctionInterface, ScopedTypeVariables #-}", 
-                              "module Language.Ruby.Hubris.Exports." ++ moduleName ++ " where",
-                              "import Language.Ruby.Hubris",
-                              "import qualified Prelude as P()",
-                              "import Language.Ruby.Hubris.Binding",
-                              "import qualified " ++ moduleName] ++
-                             [fun ++ " :: Value -> Value" | fun <- exportable ] ++
-
-                             [fun ++ " b = (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  fun ++ ") b"| fun <- exportable ] ++ 
-                             ["foreign export ccall \"hubrish_" ++  fun ++ "\" " ++ fun ++ " :: Value -> Value" | fun <- exportable ]
-
-say = liftIO . putStrLn
-
-wrapper :: String -> String
-wrapper f = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
-                              ,"  eprintf(\""++f++" has been called\\n\");"
-                              ,"  VALUE res = hubrish_" ++ f ++"(v);"
-                              ,"  eprintf(\"hubrish "++f++" has been called\\n\");"
-                              ,"  return res;"
-                              ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
-                              ,"    eprintf(\""++f++" has provoked an exception\\n\");"                               
-                              ,"    rb_exc_raise(res);"
-                              ,"  } else {"
-                              ,"    eprintf(\"returning from "++f++"\\n\");"
-                              ,"    return res;"
-                              ,"  }"
-                              ,"}"]
-            in res 
+                               -- v is actually an array now, so we need to stash each element in
+                               -- a nested haskell tuple. for the moment, let's just take the first one.
+                               
+                                         ,"  VALUE res = hubrish_" ++ f ++ intercalate "," ["(rb_ary_entry(v," ++ show i ++ ")"| i<- [0..(arity-1)]]
+                                         ,"  eprintf(\"hubrish "++f++" has been called\\n\");"
+--                              ,"  return res;"
+                                         ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
+                                         ,"    eprintf(\""++f++" has provoked an exception\\n\");"                               
+                                         ,"    rb_exc_raise(res);"
+                                         ,"  } else {"
+                                         ,"    eprintf(\"returning from "++f++"\\n\");"
+                                         ,"    return res;"
+                                         ,"  }"
+                                         ,"}"]
+                       in res 
                                     
 
-def :: String -> String
-def f =  "  eprintf(\"Defining |" ++ f  ++ "|\\n\");\n" ++ "rb_define_method(Fake, \"" ++ f ++"\","++ f++", 1);"
+    cDef :: (String,Int) -> String
+    -- adef f =  "  eprintf(\"Defining |" ++ f  ++ "|\\n\");\n" ++ "rb_define_method(Fake, \"" ++ f ++"\","++ f++", 1);"
+    cDef (f,_arity) =  "  eprintf(\"Defining |" ++ f  ++ "|\\n\");\n" ++ "rb_define_method(Fake, \"" ++ f ++"\","++ f++", -2);"
 
-forwardDecl::String->String
-forwardDecl f =  "VALUE hubrish_" ++ f ++ "(VALUE);"
+haskellBoilerplate moduleName = unlines ["{-# LANGUAGE ForeignFunctionInterface, ScopedTypeVariables #-}", 
+                                         "module Language.Ruby.Hubris.Exports." ++ moduleName ++ " where",
+                                         "import Language.Ruby.Hubris",
+                                         "import qualified Prelude as P()",
+                                         "import Data.Tuple (uncurry)",
+                                         "import qualified " ++ moduleName]
 
-getFunctions moduleName = do
-  exports <- getModuleExports moduleName
-  return $ map (\(Fun f) -> f) $ filter isFun exports
 
-isFun (Fun f) = True
-isFun _ = False
+
+-- wrapper = func ++ " b = (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  func ++ ") b", 
+genWrapper (func,arity) = unlines $ [func ++ " :: " ++ myType
+                                            ,func ++ unwords symbolArgs ++ " = " ++ defHask 
+                                            ,"foreign export ccall \"hubrish_" ++  func ++ "\" " ++ func ++ " :: " ++ myType]
+  where myType = intercalate "->" (take arity $ repeat " Value ")
+        -- mark's patented gensyms. just awful.
+        symbolArgs = take arity $ map ( \ x -> "fake_arg_symbol_"++[x]) ['a' .. 'z']
+        defHask = "unsafePerformIO $ do r <- try $ evaluate $ toRuby $ case func " ++ 
+                  unwords (map (\ x -> "(toHaskell " ++ x ++ ")") symbolArgs) ++ " of\n" ++
+                  unlines ["  Left (e::SomeException) -> createException (show e) `traces` \"died in haskell\"",
+                           "  Right a -> return a"]
+ 
+say :: String -> InterpreterT IO ()
+say = liftIO . putStrLn
+
+-- Local Variables:
+-- compile-command: "cd ../../../; ./Setup build"
+-- End:

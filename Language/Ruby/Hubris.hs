@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances #-} 
-module Language.Ruby.Hubris where
+module Language.Ruby.Hubris (wrap, Value)  where
 
 --import Data.Word
 import Data.Map as Map
@@ -22,12 +22,14 @@ import Control.Exception
 import Prelude hiding(catch)
 import Monad hiding (when)
 import Data.Typeable
-						
+
+
+
 wrap :: (Haskellable a, Rubyable b) => (a->b) -> (Value -> Value)
 wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell v)
                                   case r of
-                                    Left (_e::HubrisException) -> createException "Blah" `traces` "died in haskell"
-                                    Right a                   -> return a
+                                    Left (e::SomeException) -> createException (show e) `traces` "died in haskell"
+                                    Right a                 -> return a
 -- wrapIO too? Is there a more generic way of doing this? would need a = a', b = IO c, so Rubyable b => Rubyable (IO c). (Throw away Show constraint, not necessary)
                                     
 data HubrisException = HubrisException
@@ -58,6 +60,34 @@ class Rubyable a where
 
 instance Haskellable Int where
   toHaskell v = when v RT_FIXNUM $ fix2int v
+
+-- this is ugly, maybe we can use template haskell to remove the boilerplate?
+instance (Rubyable a, Rubyable b) => Rubyable (a,b) where
+  toRuby (a,b) = unsafePerformIO $ do ary <- rb_ary_new2 2
+                                      rb_ary_push ary (toRuby a)
+                                      rb_ary_push ary (toRuby b)
+                                      return ary
+
+instance (Rubyable a, Rubyable b, Rubyable c) => Rubyable (a,b,c) where
+  toRuby (a,b,c) = unsafePerformIO $ do ary <- rb_ary_new2 3
+                                        rb_ary_push ary (toRuby a)
+                                        rb_ary_push ary (toRuby b)
+                                        rb_ary_push ary (toRuby c)
+                                        return ary
+
+instance (Haskellable a, Haskellable b) => Haskellable (a,b) where
+  toHaskell v = when v RT_ARRAY $ unsafePerformIO $
+                do a <- toHaskell <$> rb_ary_entry v 0
+                   b <- toHaskell <$> rb_ary_entry v 1
+                   return (a,b)
+
+instance (Haskellable a, Haskellable b, Haskellable c) => Haskellable (a,b,c) where
+  toHaskell v = when v RT_ARRAY $ unsafePerformIO $
+                do a <- toHaskell <$> rb_ary_entry v 0
+                   b <- toHaskell <$> rb_ary_entry v 1
+                   c <- toHaskell <$> rb_ary_entry v 2
+                   return (a,b,c)
+
 
 
 instance Rubyable Int where
@@ -102,12 +132,11 @@ instance Haskellable Value where
 
 instance Haskellable S.ByteString where
   toHaskell v = when v RT_STRING $ unsafePerformIO $ 
-                do a <- str2cstr v >>= S.packCString  
-                   return a `traces` ("strict to Haskell: " ++ sshow a)
+                str2cstr v >>= S.packCString  >>= \a -> return a `traces` ("strict to Haskell: " ++ sshow a)
 
 instance Rubyable S.ByteString where
-  toRuby s = unsafePerformIO $ S.useAsCStringLen s  $ 
-                               \(cs,len) -> rb_str_new (cs,len) `traces` ("sstrict back to ruby:" ++ (show $ S.unpack s))
+  toRuby s = unsafePerformIO $ S.useAsCStringLen s  rb_str_new
+--                               \(cs,len) -> rb_str_new (cs,len) --`traces` ("sstrict back to ruby:" ++ (show $ S.unpack s))
                                                           
 
 instance Rubyable () where

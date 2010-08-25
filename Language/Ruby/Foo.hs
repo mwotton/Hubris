@@ -15,5 +15,6 @@ cannot_be_called = map
 internal = 1
 external = 10
 
+
 testString :: Int -> String
 testString x = show x
