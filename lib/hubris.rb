@@ -3,7 +3,8 @@ require 'rubygems'
 require 'open4'
 require 'digest/md5'
 require 'rbconfig'
-
+$:.unshift File.dirname(__FILE__) + "/../ext/stub"
+require 'stub'
 # require 'file/temp'
 # require 'libHaskell'
 # TODO delete old files
@@ -30,7 +31,7 @@ module Hubris
   HUBRIS_DIR = ENV['HUBRIS_DIR'] || "/var/hubris"
   SO_CACHE = File.expand_path(HUBRIS_DIR + "/cache")
   HS_CACHE = File.expand_path(HUBRIS_DIR + "/source")
-  require 'HubrisStubLoader'
+  # require 'stub'
   [SO_CACHE,HS_CACHE].each {|dir| FileUtils.mkdir_p(dir)}
   $:.push(SO_CACHE)
   @always_rebuild=false
@@ -80,8 +81,10 @@ module Hubris
   
   def hubrify(mod, args, src,packages=[])
     libFile = "#{SO_CACHE}/#{zencode(mod)}.#{dylib_suffix}"
+    headers = ""
+    libraries = ""
     if @always_rebuild or !File.exists?(libFile)
-      status,msg = Hubris.noisy("Hubrify --module #{mod} --output #{libFile} #{args.join(' ')} " + 
+      status,msg = Hubris.noisy("Hubrify #{headers} #{libraries} -v --module #{mod} --output #{libFile} #{args.join(' ')} " + 
                                 (packages+@@basepackages).collect{|x| "--package #{x}"}.join(' ') + ' ' + src)
       # if Hubrify's not installed, we throw an exception. just as good as explicitly checking a flag.
       raise HaskellError.new("Hubrify error:\n#{msg + status.exitstatus.to_s}") unless status.exitstatus == 0
