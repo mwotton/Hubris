@@ -1,4 +1,4 @@
-module Language.Ruby.Hubris.GHCBuild (ghcBuild, defaultGHCOptions, GHCOptions(..)) where
+module Language.Ruby.Hubris.GHCBuild (ghcBuild, defaultGHCOptions, GHCOptions(..), withTempFile) where
 import Config
 import Debug.Trace
 import DynFlags
@@ -18,35 +18,24 @@ newtype GHCOptions = GHCOptions { strict :: Bool }
 defaultGHCOptions = GHCOptions { strict = True }
 type Filename = String
 
-genHaskellFile :: String -> IO String
-genHaskellFile code = do (name, handle) <- openTempFile "/tmp" "hubris_XXXXX.hs"
-                         hPutStr handle code
-                         hClose handle
-                         return name
+standardGHCFlags = (words $ "--make -shared -dynamic -fPIC -optc-DHAVE_SNPRINTF -lHSrts-ghc" ++Config.cProjectVersion)
+                   ++ map ("-I"++) extraIncludeDirs
+                           
+withTempFile :: String -> String -> IO String
+withTempFile pattern code = do (name, handle) <- openTempFile "/tmp" pattern
+                               hPutStr handle code
+                               hClose handle
+                               return name
 
--- sh = showSDoc . ppr
--- this one's a bit tricky: we _could_ use the GHC api, but i don't care too much.
--- let's keep it simple.
---
--- ok, new plan: handling it the filthy way is awful.
---
--- We do need rshim.o, but it's packaged in the hubris lib, with any luck.
-ghcBuild :: Filename -> String -> String -> [Filename] -> [Filename] -> [String]-> IO (Maybe (ExitCode,String))
+ghcBuild :: Filename -> String -> String -> [Filename] -> [Filename] -> [String]-> IO (Either String Filename)
 ghcBuild libFile immediateSource modName extra_sources c_sources args =
     do -- putStrLn ("modname is " ++ modName)
-          -- let c_wrapper = modName ++ ".aux.o"
-          -- eesh, this is awful...
-          -- doOrDie $ System.system("gcc -c -I/opt/local/include/ruby-1.9.1 -o " ++ c_wrapper ++ " " ++ unwords c_sources)
-          haskellSrcFile <- genHaskellFile immediateSource
-          noisySystem ghc $ ["--make", "-shared", "-dynamic",  "-o",libFile,"-fPIC", "-optl-Wl,-rpath," ++ libdir,
-                             "-lHSrts-ghc" ++ Config.cProjectVersion, haskellSrcFile] ++
-                             map ("-I"++) extraIncludeDirs
-                             ++ extra_sources ++ c_sources ++ args
-
-noisySystem :: String -> [String] -> IO (Maybe (ExitCode, String))
-noisySystem cmd args = 
-    do putStrLn $ unwords (cmd:args)
-       (errCode, out, err) <- readProcessWithExitCode cmd args ""
-       return $ if (errCode == ExitSuccess)
-              then Nothing
-              else Just (errCode, unlines ["output: " ++ out, "error: " ++ err])
+          haskellSrcFile <- withTempFile "hubris_XXXXX.hs" immediateSource
+          (code, out, err) <- noisySystem ghc $ standardGHCFlags ++ ["-o",libFile,"-optl-Wl,-rpath," ++ libdir,
+                                                                     haskellSrcFile] ++ extra_sources ++ c_sources ++ args
+          return $ case code of
+            ExitSuccess -> Right libFile
+            otherCode   -> Left $ unlines ["Errcode: " ++show code,"output: " ++ out, "error: " ++ err]
+               
+noisySystem :: String -> [String] -> IO (ExitCode, String,String)
+noisySystem cmd args = (putStrLn . unwords) (cmd:args) >> readProcessWithExitCode cmd args ""
