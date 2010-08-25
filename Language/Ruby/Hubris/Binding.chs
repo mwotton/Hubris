@@ -39,7 +39,6 @@ rubyType = toEnum . rtype
 constToRuby :: RubyConst -> Value
 constToRuby = fromIntegral . fromEnum 
 --  RUBY_VERSION_CODE <= 187
-#if 0
 data RubyConst  = RUBY_Qfalse 
                 | RUBY_Qtrue  
                 | RUBY_Qnil   
@@ -56,9 +55,7 @@ instance Enum RubyConst where
   toEnum 4 = RUBY_Qnil
   toEnum 6 = RUBY_Qundef
   toEnum 12 = RUBY_Qnil
-#else
-{# enum ruby_special_consts as RubyConst {} deriving (Eq,Show) #}
-#endif
+-- {# enum ruby_special_consts as RubyConst {} deriving (Eq,Show) #}
 
 str2cstr str = rb_str2cstr str 0
 type Value = CULong -- FIXME, we'd prefer to import the type VALUE directly
