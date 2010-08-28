@@ -20,6 +20,10 @@ foo False = True"; end
     }.should_not raise_error
   end
 
+  it "doesn't get fussy about non-exportable stuff" do
+    lambda { class Empty; hubris :inline => "data Foo=Foo; fooerator :: Foo->Foo; fooerator Foo = Foo";end }.should_not raise_error
+  end
+  
   it "sings like a golden bird when you treat it right, aw yeah" do
     #    t = Target.new
     #    lambda { t.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
@@ -37,13 +41,27 @@ foo False = True"; end
     t.my_negate(true).should eql(false)
     lambda{ t.my_negate("Banana")}.should raise_error
   end
-  
-  it "handles doubles" do
+end  
+  #   it "handles booleans" do
+  #     class Bar
+  #       hubris :inline => "my_negate True = False;my_negate False = True", :no_strict => true
+  #     end
+  #     t = Bar.new
+  #     # puts t.methods
+  #     t.my_negate(false).should eql(true)
+  #     t.my_negate(true).should eql(false)
+  #     lambda{ t.my_negate("Banana")}.should raise_error
+  #   end
+
+
+describe "Floats" do
+  before do
     class Doubler
       hubris :inline => "triple :: Double -> Double; triple a = a*3.0", :no_strict => true
     end
+  end
+  it "handles doubles" do
     d = Doubler.new
-
     d.triple(3.4).should eql(10.2)
   end
 end
@@ -57,12 +75,34 @@ describe "Strings" do
   end
 end
 
+describe "tuples" do
+  before do
+    class Tupler
+      hubris :inline => "revTup :: (Integer,Integer) -> (Integer,Integer); revTup (a,b) = (b,a)"
+      hubris :inline => "expand :: (Integer,Integer) -> (Integer,Integer,Integer); expand (a,b) = (b,a,b)"
+    end
+  end
+  
+  before :each do
+    @t = Tupler.new
+  end
+
+  it 'can call a tuple with an array' do
+    @t.revTup([1,2]).should == [2,1]
+  end
+
+  it 'has no funny array business' do
+    @t.expand([1,2]).should == [2,1,2]
+  end
+end
+
 describe "BigInt" do
-  context "BigInts" do
+  before do
     class Bigint
       hubris :inline => "big_inc :: Integer -> Integer; big_inc i = i + 1"
     end
   end
+
   before(:each) do
     @b = Bigint.new
   end
@@ -73,6 +113,10 @@ describe "BigInt" do
 
   it "handles really big ints" do
     @b.big_inc(1000000000000000000000000).should eql(1000000000000000000000001)
+  end
+  
+  it "handles > int but < bigint" do
+    @b.big_inc(1000000000000000000).should eql(1000000000000000001)
   end
 
   it "handles ints just before the border" do
@@ -118,7 +162,7 @@ describe 'Arrays' do
     end
     t=ArrayTest2.new
     t.elts(5).should eql([1,2,3,4,5])
-    lambda { t.elts("A Banana")}.should raise_error(HaskellError)
+    lambda { t.elts("A Banana").should == "FOO" }.should raise_error(HaskellError)
   end
   it "uses a Haskell array" do
     class ArrayTest3
@@ -207,6 +251,7 @@ describe "Overwrite" do
       hubris :inline => "myid::Int -> Int; myid i = i+1"
     end
     t=Overlapping.new
+    puts t.methods
     t.myid(1).should eql(2)
   end
   
@@ -255,6 +300,7 @@ describe 'Idempotence' do
   end
   
   it "can insert the same code into two ruby modules" do
+
     class Foo10
       hubris :inline => "foobar::Double -> Double;foobar n = n+1.0"
     end
@@ -270,9 +316,9 @@ end
 
 describe 'Realworld' do
   it "can handle the bytestring lib" do
-
+    # pending "check"
     class ByteString
-      hubris :module => "Data.ByteString"
+      hubris :module => "Data.ByteString", :no_strict => true
     end
     
     b = ByteString.new
@@ -280,18 +326,23 @@ describe 'Realworld' do
   end
   
   it "can import zlib" do
-    pending "Not doing the right thing with embedded nulls yet"
+
     class ZLib
       hubris :module => 'Codec.Compression.GZip', :packages => ['zlib', 'bytestring']
     end
     z=ZLib.new
     w="osatnoensauhoestnuhoastuhoeatnuhosnueohnsauostneo"
-    puts w.encoding
+        pending "Not doing the right thing with embedded nulls yet"
+    # for the moment, we're happy if it errors out in a controlled way
+    
+    lambda {z.decompress(z.compress(w)).should eql(w)}.should raise_error(HaskellError)
+
     x=z.compress(w)
-    x.each_byte {|c| print c, ' ' }
+    x.each_byte {|c| print c, ':' }
     puts "length|#{x.length}|"
+#    x.length.should > 5 # probably some shannon thing here
     puts "second"
-    z.decompress(z.compress(w)).should eql(w)
+    lambda {z.decompress(z.compress(w)).should eql(w)}.should_not raise_error
   end
   
 end
@@ -304,7 +355,6 @@ describe 'Performance' do
   it "caches its output" do
     # only relevant for inlining
     
-    t=Target.new
     class First
       hubris :inline => "foobar::Int->Int; foobar a = a"
     end
@@ -371,5 +421,18 @@ EOF
     i.modify(20)
     i.readRef(nil).should == 20
     
+  end
+end
+
+describe "multiple arguments" do
+  it "can call a haskell function with multiple arguments" do
+    class Mult
+      hubris :inline => <<EOF
+add :: Integer -> Integer -> Integer
+add x y = x+y
+EOF
+    end
+
+    Mult.new.add(1,10).should == 11
   end
 end
