@@ -86,7 +86,9 @@ module Hubris
     if @always_rebuild or !File.exists?(libFile)
       status,msg = Hubris.noisy("Hubrify #{headers} #{libraries} -v --module #{mod} --output #{libFile} #{args.join(' ')} " + 
                                 (packages+@@basepackages).collect{|x| "--package #{x}"}.join(' ') + ' ' + src)
-      # if Hubrify's not installed, we throw an exception. just as good as explicitly checking a flag.
+      # if Hubrify's not installed, we throw an exception. just as
+      # good as explicitly checking a flag.
+      puts msg
       raise HaskellError.new("Hubrify error:\n#{msg + status.exitstatus.to_s}") unless status.exitstatus == 0
     end
     return libFile
@@ -94,18 +96,15 @@ module Hubris
   
   def dylib_suffix
     case Config::CONFIG['target_os']
-    when /darwin/
-      "bundle"
-    when /linux/
-      "so"
-    else
-      "so" #take a punt
+    when /darwin/; "bundle"
+    when /linux/;  "so"
+    else;          "so" #take a punt
     end
   end
   
   def self.noisy(str)
     pid, stdin, stdout, stderr = Open4.popen4 str
-    # puts "running #{str}\n"
+    puts "running #{str}\n"
 
 
     # puts "Status: #{status.exitstatus}"

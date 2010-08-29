@@ -104,6 +104,7 @@ describe "BigInt" do
   end
 
   before(:each) do
+    pending
     @b = Bigint.new
   end
 
@@ -111,14 +112,42 @@ describe "BigInt" do
     @b.big_inc(1).should eql(2)
   end
 
+
+  it 'handles foo' do
+    @b.big_inc(536870912).should ==     536870913
+  end
+
+  it 'handles foo' do
+    @b.big_inc(536870913).should == 536870914
+  end
+
+  # it 'tests' do
+  #   low = 536870912
+  #   high = 1073741825
+    
+  #   while low != high
+  #     mid = (high + low)/2
+  #     puts "mid is #{mid}"
+  #     if @b.big_inc(mid) == mid + 1
+  #       low = mid
+  #     else
+  #       high = mid
+  #     end
+  #   end
+  #   puts "highest working is #{mid}"
+  # end
+
+  it 'handles 30 bits' do
+    @b.big_inc(1073741822).should == 1073741823
+  end
+  it 'handles > 30 bits' do
+    @b.big_inc(1073741823).should == 1073741824
+  end
+  
   it "handles really big ints" do
     @b.big_inc(1000000000000000000000000).should eql(1000000000000000000000001)
   end
   
-  it "handles > int but < bigint" do
-    @b.big_inc(1000000000000000000).should eql(1000000000000000001)
-  end
-
   it "handles ints just before the border" do
     @b.big_inc(2147483647).should == 2147483648
   end
@@ -127,6 +156,21 @@ describe "BigInt" do
     @b.big_inc(2147483648).should == 2147483649
   end
 
+end
+
+describe "BigID" do
+
+  before do
+    class BigId
+      hubris :inline => "big_inc :: Integer -> Integer; big_inc i = i"
+    end
+    @b = BigId.new
+  end
+
+  it 'returns a big fix'  do
+    pending
+    @b.big_inc(1073741824).should == 1073741824
+  end
 end
 
 describe 'Multiple' do
@@ -402,6 +446,7 @@ end
 
 describe "IO" do
   it "can write a variable" do
+    pending
     class IOTest
       hubris :inline =><<EOF
 import Data.IORef
@@ -409,8 +454,8 @@ import System.IO.Unsafe
 ref :: IORef Int
 ref = unsafePerformIO $ newIORef 10
 
-readRef :: Value -> IO Int
-readRef _ = readIORef ref
+readRef :: IO Int
+readRef = readIORef ref
 modify :: Int -> IO ()
 modify n = writeIORef ref n 
 EOF
@@ -428,11 +473,11 @@ describe "multiple arguments" do
   it "can call a haskell function with multiple arguments" do
     class Mult
       hubris :inline => <<EOF
-add :: Integer -> Integer -> Integer
-add x y = x+y
+add :: Integer -> Integer -> Integer -> Integer
+add x y z = x+y+z
 EOF
     end
 
-    Mult.new.add(1,10).should == 11
+    Mult.new.add(1,9,100).should == 110
   end
 end
