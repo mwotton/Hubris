@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances #-} 
-module Language.Ruby.Hubris (wrap, Value)  where
+{-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, TypeSynonymInstances, FlexibleInstances, OverlappingInstances, UndecidableInstances#-}
+module Language.Ruby.Hubris  where
 
 --import Data.Word
 import Data.Map as Map
@@ -23,14 +23,24 @@ import Prelude hiding(catch)
 import Monad hiding (when)
 import Data.Typeable
 
+class Callable a where
+  arity :: a -> Int
+  
+instance (Callable b, Haskellable a) => Callable (a -> b) where
+  arity x = 1 + arity (undefined :: b)
+  
+instance Rubyable a => Callable a where
+  arity x = 0
+  
+-- with thanks to copumpkin on #haskell and twitter
 
-
-wrap :: (Haskellable a, Rubyable b) => (a->b) -> (Value -> Value)
-wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell v)
-                                  case r of
-                                    Left (e::SomeException) -> createException (show e) `traces` "died in haskell"
-                                    Right a                 -> return a
--- wrapIO too? Is there a more generic way of doing this? would need a = a', b = IO c, so Rubyable b => Rubyable (IO c). (Throw away Show constraint, not necessary)
+-- wrap :: (Haskellable a, Rubyable b) => (a->b) -> (Value -> Value)
+-- wrap func v= unsafePerformIO $ do r <- try (evaluate $ toRuby . func $ toHaskell v)
+--                                   case r of
+--                                     Left (e::SomeException) -> createException (show e) `traces` "died in haskell"
+--                                     Right a                 -> return a
+-- -- wrapIO too? Is there a more generic way of doin
+--             g this? would need a = a', b = IO c, so Rubyable b => Rubyable (IO c). (Throw away Show constraint, not necessary)
                                     
 data HubrisException = HubrisException
   deriving(Show, Typeable)
@@ -195,12 +205,21 @@ instance (Ord a, Eq a, Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
 instance (Ord a, Eq a, Haskellable b, Haskellable a) => Haskellable (Map.Map a b) where
   toHaskell hash = when hash RT_HASH $ unsafePerformIO $ 
                 -- fromJust is legit, rb_keys will always return list
-                     do l :: [Value] <- toHaskell <$> rb_keys hash
-                        foldM (\m k -> do val <- rb_hash_aref hash k
-                                          return $ Map.insert (toHaskell k) 
+                     do putStrLn "Bringing hash over" 
+                        keys <- rb_keys hash
+                        putStrLn ("got the keys: "  ++ show keys)
+                        l :: [Value] <- toHaskell <$> rb_keys hash
+                        putStrLn ("translated the keys: "  ++ show l)
+
+                        r <- foldM (\m k -> do putStrLn $ "Key is " ++ show k
+                                               val <- rb_hash_aref hash k
+                                               putStrLn $ "Val is " ++ show val
+                                               return $ Map.insert (toHaskell k) 
                                                               (toHaskell val)
                                                               m)
-                              Map.empty l
+                                    Map.empty l
+                        putStrLn "Folded and returning"
+                        return r
                                                    
 
 

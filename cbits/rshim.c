@@ -22,7 +22,7 @@ long fix2int(VALUE x) {
   printf("fix2long called\n");
   // return rb_num2int(x);
   return FIX2LONG(x);
- // return FIX2INT(x);
+  //return FIX2INT(x);
 }
 
 double num2dbl(VALUE x) {

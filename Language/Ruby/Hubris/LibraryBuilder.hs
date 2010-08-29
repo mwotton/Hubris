@@ -1,6 +1,6 @@
 
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, ScopedTypeVariables #-}
-module Language.Ruby.Hubris.LibraryBuilder (generateLib) where
+module Language.Ruby.Hubris.LibraryBuilder where
 import Language.Ruby.Hubris
 import Language.Haskell.Interpreter
 -- import Language.Haskell.Meta.QQ.HsHere
@@ -12,7 +12,7 @@ import qualified Debug.Trace
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Error.Class
-import Data.Maybe(catMaybes)
+import Data.Maybe(catMaybes,fromJust, isJust)
 
 import GHC(parseStaticFlags, noLoc)
 import System.IO(hPutStr, hClose, openTempFile)
@@ -41,40 +41,49 @@ type Funcname = String
 type Wrapper = String
 
 
-
-arity :: String -> InterpreterT IO (Maybe Int)
-arity func = arity' 0 func
-  where cutoff = 20                             
-        arity' tries func
-          | tries > cutoff = return Nothing
-          | otherwise = do ok <- typeChecks (func ++ " `asTypeOf` (\\_ -> undefined)")
-                           if ok
-                             then arity' (1+tries) ("(" ++ func ++ " undefined)")
-                             else return (Just tries)
+callable ::String -> InterpreterT IO (Maybe Int)
+callable func = do
+  ok <- typeChecks str
+  if not ok
+     then return Nothing
+     else do res <- interpret str (as::Int)
+             return $ Just res
+  where str = "Language.Ruby.Hubris.arity " ++  parens func 
+  
 
 -- ok, let's see if we can come up with an expression of the right type
 exportable ::  String -> String -> InterpreterT IO (Maybe (Funcname, Int, Wrapper))
-exportable moduleName func = do args <- arity qualName
-                                case args of
+exportable moduleName func = do say $ "checking " ++ qualName
+                                -- here's the problem - i want callable to return Maybe, not bomb
+                                -- all the way back out to the outer runInterpreter
+                                match <- callable qualName
+                                case match of
                                   Nothing -> return Nothing
-                                  Just i -> do let wrapped = genWrapper (qualName,i)
-                                               typeChecks (wrapped ++ " = " ++ rubyVal) >>= \x -> (return $ guard x >> return (func,i,wrapped))
+                                  Just i -> do
+                                    let wrapped = genApp qualName i
+                                    let eqn = wrapped ++ " == " ++ haskellVal
+                                    say ("to check: " ++ eqn)
+                                    checked <- typeChecks eqn
+                                    say ("Succeeded? " ++ show checked)
+                                    return $ guard checked>> return (func, i, genWrapper (func,i) moduleName)
+                                               
   where qualName = moduleName ++ "." ++ func
         rubyVal = "(fromIntegral $ fromEnum $ Language.Ruby.Hubris.Binding.RUBY_Qtrue)"
-        
+        haskellVal = "(Language.Ruby.Hubris.toHaskell " ++ rubyVal ++ ")"
+        genApp qualName i = unwords (qualName:(take i $ repeat haskellVal))
                                      
-
 generateSource :: [Filename] ->   -- optional haskell source to load into the interpreter
                    ModuleName ->   -- name of the module to build a wrapper for
                    IO (Either InterpreterError (String,String))
 generateSource sources moduleName = runInterpreter $ do
          loadModules sources
-         setImportsQ $ [(mod,Just mod) | mod <- ["Language.Ruby.Hubris","Language.Ruby.Hubris.Binding",moduleName]]
+         setImportsQ $ [(mod,Just mod) | mod <- ["Language.Ruby.Hubris","Language.Ruby.Hubris.Binding", moduleName]]
          funcs <- getFunctions moduleName 
          say ("Candidates: " ++ show funcs)
+         mapM (exportable moduleName) funcs >>= \x -> say (show x)
          exports :: [(Funcname, Int,  Wrapper)] <- mapMaybeM (exportable moduleName) funcs
          say ("Exportable: " ++ show exports)
-         return (undefined, undefined)
+         -- return (undefined, undefined)
          return (genC [(a,b) | (a,b,_) <- exports] (zenc moduleName),
                  unlines (haskellBoilerplate moduleName:[wrapper | (_,_,wrapper) <- exports]))
                           
@@ -114,7 +123,7 @@ genC exports (Zname zmoduleName) = unlines $
                                -- v is actually an array now, so we need to stash each element in
                                -- a nested haskell tuple. for the moment, let's just take the first one.
                                
-                                         ,"  VALUE res = hubrish_" ++ f ++ intercalate "," ["(rb_ary_entry(v," ++ show i ++ ")"| i<- [0..(arity-1)]]
+                                         ,"  VALUE res = hubrish_" ++ f ++ "(" ++ intercalate "," ["rb_ary_entry(v," ++ show i ++ ")"| i<- [0..(arity-1)]] ++ ");"
                                          ,"  eprintf(\"hubrish "++f++" has been called\\n\");"
 --                              ,"  return res;"
                                          ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
@@ -126,7 +135,6 @@ genC exports (Zname zmoduleName) = unlines $
                                          ,"  }"
                                          ,"}"]
                        in res 
-                                    
 
     cDef :: (String,Int) -> String
     -- adef f =  "  eprintf(\"Defining |" ++ f  ++ "|\\n\");\n" ++ "rb_define_method(Fake, \"" ++ f ++"\","++ f++", 1);"
@@ -135,23 +143,28 @@ genC exports (Zname zmoduleName) = unlines $
 haskellBoilerplate moduleName = unlines ["{-# LANGUAGE ForeignFunctionInterface, ScopedTypeVariables #-}", 
                                          "module Language.Ruby.Hubris.Exports." ++ moduleName ++ " where",
                                          "import Language.Ruby.Hubris",
-                                         "import qualified Prelude as P()",
+                                         "import Language.Ruby.Hubris.Binding",
+                                         "import System.IO.Unsafe (unsafePerformIO)",
+                                         "import Control.Monad",
+                                         "import Control.Exception",
+                                         "import Data.Either",
+                                         "import Data.Function(($))",
+                                         "import qualified Prelude as P(show)",
                                          "import Data.Tuple (uncurry)",
                                          "import qualified " ++ moduleName]
 
 
 
 -- wrapper = func ++ " b = (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  func ++ ") b", 
-genWrapper (func,arity) = unlines $ [func ++ " :: " ++ myType
-                                            ,func ++ unwords symbolArgs ++ " = " ++ defHask 
+genWrapper (func,arity) mod = unlines $ [func ++ " :: " ++ myType
+                                            ,func ++ " " ++  unwords symbolArgs ++ " = " ++ defHask 
                                             ,"foreign export ccall \"hubrish_" ++  func ++ "\" " ++ func ++ " :: " ++ myType]
-  where myType = intercalate "->" (take arity $ repeat " Value ")
+  where myType = intercalate "->" (take (1+arity) $ repeat " Value ")
         -- mark's patented gensyms. just awful.
         symbolArgs = take arity $ map ( \ x -> "fake_arg_symbol_"++[x]) ['a' .. 'z']
-        defHask = "unsafePerformIO $ do r <- try $ evaluate $ toRuby $ case func " ++ 
-                  unwords (map (\ x -> "(toHaskell " ++ x ++ ")") symbolArgs) ++ " of\n" ++
-                  unlines ["  Left (e::SomeException) -> createException (show e) `traces` \"died in haskell\"",
-                           "  Right a -> return a"]
+        defHask = "unsafePerformIO $ do\n  r <- try $ evaluate $ toRuby $" ++ mod ++"."++ func  ++ " " ++ unwords (map (\ x -> "(toHaskell " ++ x ++ ")") symbolArgs) ++ "\n  case r of\n" ++     
+                  unlines ["   Left (e::SomeException) -> createException (P.show e) `traces` \"died in haskell\"",
+                           "   Right a -> return a"]
  
 say :: String -> InterpreterT IO ()
 say = liftIO . putStrLn

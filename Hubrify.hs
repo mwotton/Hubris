@@ -36,7 +36,7 @@ options =
          "bondage and discipline mode"
      , Option "o"     ["output"]
          (ReqArg (\f opts -> opts { optOutput = f }) "libFile")
-         "output FILE"1
+         "output FILE"
      , Option "m"     ["module"]
          (ReqArg (\f opts -> opts { optModule = f }) "module")
          "module to be wrapped"
