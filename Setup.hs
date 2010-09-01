@@ -10,16 +10,17 @@ import System.Process
 import Maybe
 import qualified Distribution.ModuleName as Modname
 main = do
-  includeDir <- readProcess "ruby" ["-rrbconfig", "-e", "print RbConfig::CONFIG['archdir']"] ""
-  defaultMainWithHooks (hooks includeDir)
+  includeDir <- readProcess "ruby" ["-rrbconfig", "-e", "print RbConfig::CONFIG['rubyhdrdir']"] ""
+  archDir <- readProcess "ruby" ["-rrbconfig", "-e", "print RbConfig::CONFIG['archdir'].gsub(/\\/lib\\//, '/include/')"] ""
+  defaultMainWithHooks (hooks includeDir archDir)
 
-hooks includeDir = simpleUserHooks
+hooks includeDir archDir = simpleUserHooks
   {
    preConf = \arg flags -> do
       -- probably a nicer way of getting that directory...
       createDirectoryIfMissing True "dist/build/autogen"
       -- FILTHY HACK
-      writeFile "dist/build/autogen/Includes.hs" ("module Includes where\nextraIncludeDirs=[\"" ++ includeDir++"\"]") -- show (configExtraIncludeDirs flags))
+      writeFile "dist/build/autogen/Includes.hs" ("module Includes where\nextraIncludeDirs=[\"" ++ includeDir++"\",\"" ++ archDir ++ "\"]") -- show (configExtraIncludeDirs flags))
       return D.emptyHookedBuildInfo,
    confHook = \ info flags ->  (confHook simpleUserHooks) info (flags { configSharedLib = Flag True, configExtraIncludeDirs = [includeDir] }),
    sDistHook = \ pkg lbi hooks flags -> let lib = fromJust $ D.library pkg
