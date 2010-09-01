@@ -1,6 +1,5 @@
 #!/bin/bash -x
 set -e
-false
 source $HOME/.rvm/scripts/rvm
 export PATH=$PATH:$HOME/.cabal/bin
 # another huge hack. let's fix this properly soon TODO
