@@ -21,7 +21,7 @@ Description:    Support library for Hubris, the Ruby to Haskell bridge
 
 Library
         -- the ordering is critical, because Cabal doesn't do dependency analysis.
-        Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild, Includes, Language.Ruby.Hubris.Arity
+        Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild, Includes
         c-sources: cbits/rshim.c
         -- includes:  cbits/rshim.h
         install-includes:  cbits/rshim.h
@@ -48,5 +48,5 @@ Executable Hubrify
   --  but you _really_ want a dynamic lib with Hubrify, or you'll get a truly
   -- huge binary (may not even link, I had problems with the iconv dependency from HSbase)
   -- anyway, pass "--ghc-options=-dynamic" to ./Setup configure, and you should be apples.
-  -- ghc-options: -dynamic
+  ghc-options: -dynamic
 

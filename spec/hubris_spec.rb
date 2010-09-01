@@ -1,40 +1,13 @@
 # encoding: ASCII-8BIT
 load File.dirname(__FILE__) + '/spec_helper.rb'
-<<<<<<< HEAD
 require "hubris"
-Hubris.add_packages %w(base)
-
-Signal.trap("INT", 'EXIT');
-
-describe "Target" do  
-  it "whines like a little baby when you pass it bad haskell" do
-    lambda{ class Foo; hubris :inline => "broken _ = (1 + \"a string\")", :no_strict => true; end}.should raise_error(HaskellError)
-=======
-
 Hubris.add_packages %w(base bytestring)
-
-# # just want to check it's actually possible to load a library dynamically
-# describe "dlload" do
-#   it "actually builds and loads a C level dylib stupidly" do
-#     system "cd sample; make"
-#     `cd sample; ruby hsload.rb`.chomp.should eql("144")
-#   end
-# end
-
-module Target
-  include Hubris
-  def foo_local
-    14
-  end
-end
 
 Signal.trap("INT", 'EXIT');
 
 describe "Target" do
   it "whines like a little baby when you pass it bad haskell" do
-    # t = Target.new
-    lambda{ module Foo; hubris :inline => "broken _ = (1 + \"a string\")"; end}.should raise_error(HaskellError)
->>>>>>> f30efd0d09351b8486c345dff82865e7c6f9c55d
+    lambda{ class Foo; hubris :inline => "broken = (1 + \"a string\")"; end}.should raise_error(HaskellError)
   end
 
   it "ignores a comment" do
@@ -51,19 +24,6 @@ foo False = True"; end
     lambda { class Empty; hubris :inline => "data Foo=Foo; fooerator :: Foo->Foo; fooerator Foo = Foo";end }.should_not raise_error
   end
   
-  it "sings like a golden bird when you treat it right, aw yeah" do
-<<<<<<< HEAD
-    #    t = Target.new
-    #    lambda { t.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
-    lambda { class Foo; hubris :inline => "working :: Integer -> Integer; working a = 2*a"; end}.should_not raise_error
-=======
-#    t = Target.new
-#    lambda { t.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
-    lambda { Target.inline("working _ = T_FIXNUM (1+2)", { :no_strict => true }) }.should_not raise_error
->>>>>>> f30efd0d09351b8486c345dff82865e7c6f9c55d
-  end
-
-
   it "handles booleans" do
     class Bar
       hubris :inline => "my_negate True = False;my_negate False = True", :no_strict => true
