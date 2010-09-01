@@ -1,6 +1,5 @@
 .jhci-hist
 .#*
-jhc stuff
 hs.out_code.c
 hs.out
 pkg/
@@ -15,6 +14,7 @@ lib/RubyMap.o
 lib/rshim.o
 sample/tmp
 sample/tmp.old
+<<<<<<< HEAD
 Makefile
 *.o
 *.bundle
@@ -22,3 +22,17 @@ Makefile
 *.dll
 pkg
 .DS_Store
+=======
+Setup
+dist
+*.hi
+*.o
+*.aux
+*.log
+*.dvi
+*.snm
+*.toc
+*.vrb
+*.nav
+*.out
+>>>>>>> f30efd0d09351b8486c345dff82865e7c6f9c55d
