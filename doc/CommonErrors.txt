@@ -1,0 +1,18 @@
+this is a quick guide to diagnosing what could be wrong.
+
+This:
+"""
+/var/folders/Dz/Dz5WpFSZGUaFLA8jp8kT5E+++TM/-Tmp-/working_source.hs:7:7:
+    Could not find module `Foreign':
+      Perhaps you haven't installed the "dyn" libraries for package
+      `base'?
+"""
+
+indicates that GHC HEAD was not installed correctly. Run something
+like "find /usr/local -iname '*dyn_hi'" to check that the GHC you are
+using has all its dynamic library header files installed. If it
+doesn't, you probably didn't build GHC the right way: check
+http://www.shimweasel.com/2009/09/16/another-awful-hack-to-ghc-6-11
+and
+http://www.shimweasel.com/2009/09/14/unprincipled-skulduggery-with-ghc-6-12-dylibs-on-mac-os-x
+for more info.

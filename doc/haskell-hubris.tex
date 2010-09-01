@@ -1,0 +1,242 @@
+% Local Variables:
+% compile-command: "/opt/local/bin/pdflatex fp-syd.tex && open fp-syd.pdf"
+% End:
+
+\documentclass{beamer}
+\usepackage{listings}
+\usepackage{beamerthemesplit}
+
+\title{Hubris}
+\subtitle{A Trojan Horse for Haskell}
+\author{Mark Wotton \textless mwotton@shimweasel.com\textgreater}
+\date{\today}
+
+\begin{document}
+\lstset{language=Haskell}
+\section{Two cultures}
+\frame{\titlepage}
+
+% \subsection
+\begin{frame}
+  \frametitle{I \ding{170} Ruby}
+  \begin{itemize}
+  \item concise and flexible
+  \item Big web community, many libraries
+  \item Fun
+  \end{itemize}
+\end{frame}
+
+\begin{frame} 
+  \frametitle{I \ding{170} Haskell}
+  \begin{itemize}
+  \item<1-> Fast (optimised native code, multicore, etc)
+  \item<2-> Expressive - type systems don't have to suck.
+  \item<3-> Provably safe at compile time
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{So, why do I care?}
+  \begin{itemize}
+  \item<1-> Make it easier to slap up a quick web interface to cool
+    haskell code.
+  \item<2-> Get more web-savvy devs into the Haskell community
+  \end{itemize}
+\end{frame}
+
+\subsection{problems with Haskell}
+\begin{frame}
+\frametitle{heresies}
+\setlength\parskip{0.1in}
+
+Haskell web frameworks are still niche.
+
+It's an engineering problem, and pretty boring.
+
+Haskell devs aren't exactly hard to find, but they don't seem to be
+web guys.
+
+\end{frame}
+
+\subsection{problems with Ruby}
+\begin{frame}
+  \frametitle{lies, damn lies, benchmarks}
+  \center{JRuby vs GHC}
+  \begin{tabular}{l l l l} 
+    Program &	        Time	&Memory &	Source Size\\ \hline
+    reverse-complement	&5	&1	&1/4\\
+    regex-dna	        &7	&3	&1/5\\	
+    binary-trees	        &8	&7	&1	\\	
+    k-nucleotide	        &10	&1	&1/7	\\	
+    pidigits	        &18	&18	&2	\\	
+    n-body	        &26	&53	&1	\\	
+    chameneos-redux	&30	&24	&1	\\	
+    fasta	                &31	&142	&1	\\	
+    fannkuch	        &45	&22	&1/4	\\	
+    spectral-norm	        &227	&56	&1/3	\\	
+    mandelbrot	        &319	&3	&1/2\\	
+  \end{tabular}
+\end{frame}
+
+
+
+\section{Hubris}
+\begin{frame}
+\frametitle{Peanut butter, meet chocolate}
+Ruby has a heap of web frameworks, convenience libraries, well-tested
+integration with javascript + CSS.
+
+\setlength\parskip{0.25in}
+
+Haskell is smoking fast with rock solid type safety but a relatively tiny
+community
+
+Hubris is my bridge between the two
+\end{frame}
+
+\begin{frame}
+\frametitle{Again, WHY?}
+There are seventy bazillion ways of talking between languages.
+ \begin{itemize}
+  \item Web services
+  \item text over pipes
+  \item Protocol buffers, Thrift
+  \item COM, HOC, etc (binary interfaces)
+ \end{itemize}
+
+Reasons to do it this way:
+ \begin{itemize}
+   \item it's fun (for me, anyway)
+   \item low fuss - no explicit mapping of function interfaces
+   \item easy to explore a library
+   \item few dependencies
+ \end{itemize}
+\end{frame}
+
+\lstset{language=Haskell}
+\subsection{Haskell example}
+\begin{frame}[fragile]
+  \frametitle{lazy, statically typed, and pure}
+  Collatz.hs
+  \begin{lstlisting}
+module Collatz where
+clMax lim = maximumBy (comparing snd) (assocs arr)
+  where arr = listArray (1,lim) 
+                       (0:(map depth [2..]))
+        step x = if even x 
+                   then div x 2 
+                   else 3 * x + 1
+        depth x = 1 + if n <= lim 
+                        then arr ! n 
+                        else depth n
+          where n = step x    
+  \end{lstlisting}
+  Hubrify Collatz collatz.dylib Collatz.hs
+
+\end{frame}
+
+\subsection{wrap it in Ruby}
+\begin{frame}[fragile]
+  \frametitle{actually using it}
+  \lstset{language=Ruby}
+  \begin{lstlisting}
+    require Hubris           # my favourite line
+    module Collatz
+      hubris :module => 'collatz'
+    end
+    puts Collatz.clMax(1000000)
+    >> 837799
+  \end{lstlisting}
+\end{frame}
+
+\subsection{beneath the covers}
+\begin{frame}[fragile]
+  \frametitle{on the Haskell side}
+  Hubrify loads the given source files and attempts to find the
+  passed-in module using the GHC API.
+\lstset{language=Haskell}
+\begin{lstlisting}
+data RValue = T_NIL | T_FIXNUM Int | ...
+type Value = CULong -- imported from Ruby
+class Haskellable a where
+  toHaskell :: RValue -> Maybe a
+
+class Rubyable a where
+  toRuby :: a -> RValue
+
+wrap :: (Haskellable a, Rubyable b) -> 
+        (a -> b) -> (Value -> Value)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{blah}
+  For each top level definition f, we then typecheck. 
+\begin{lstlisting}
+(wrap f) T_NIL == T_NIL 
+\end{lstlisting}
+if it fits, it's exportable.
+
+  create a Haskell file exporting each valid function, add a top level
+  manifest, and compile into a self-contained dylib.
+
+\end{frame}
+
+\begin{frame}
+ \frametitle{On the ruby side}
+ No Haskell-specific information at all.
+
+ We have a manifest function we need to call to find the names of
+ wrapped functions. (Also gives us a convenient point to initialise
+ the Haskell runtime)
+
+ attach all passed functions as methods on the surrounding module
+
+\end{frame}
+
+
+% \frametitle{Predictive}
+\section{Making it less sucky}
+\begin{frame}
+\setlength\parskip{0.1in}
+\frametitle{What's been done}
+  caching of Haskell binaries
+
+  transparent mapping - no boilerplate
+
+  separation of concerns - no compiler on server
+
+  ported to GHC
+\end{frame}
+
+\begin{frame}
+\frametitle{Still to do}
+  one-way bridge, no callbacks to Ruby
+
+  autoconf support to find ruby libs and includes
+
+  more serious hammering to find bugs - is it legitimate to dlopen
+  multiple haskell dylibs?
+
+  performance testing
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Try it out!}
+  install GHC 6.12 release candidate
+
+  git clone git://github.com/mwotton/HaskellHubris.git 
+
+  git clone git://github.com/mwotton/Hubris.git     
+
+  follow the README
+
+  tell me what's missing
+
+  patches very much welcome (thanks to Josh Price, James Britt and Tatsuhiro Ujihisa)
+\end{frame}
+
+\end{document}
