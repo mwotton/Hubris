@@ -11,7 +11,7 @@ import Maybe
 import qualified Distribution.ModuleName as Modname
 main = do
   includeDir <- readProcess "ruby" ["-rrbconfig", "-e", "print RbConfig::CONFIG['rubyhdrdir']"] ""
-  archDir <- readProcess "ruby" ["-rrbconfig", "-e", "print RbConfig::CONFIG['archdir'].gsub(/\\/lib\\//, '/include/')"] ""
+  archDir <- readProcess "ruby" ["-rrbconfig", "-e", "print RbConfig::CONFIG['archdir'].gsub(/\\/lib\\//, '/include/').gsub(/\\/include\\/ruby\\//, '/include/ruby-')"] ""
   defaultMainWithHooks (hooks includeDir archDir)
 
 hooks includeDir archDir = simpleUserHooks
