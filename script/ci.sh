@@ -7,8 +7,8 @@ export PATH=$PATH:$HOME/.cabal/bin
 export LD_LIBRARY_PATH=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/    
 export HUBRIS_DIR=~/tmp
 mkdir $HUBRIS_DIR || true
-source $HOME/.rvm/scripts/rvm || true
-rvm reload
+# source $HOME/.rvm/scripts/rvm || true
+# rvm reload
 
 # rm `which Hubrify`
 cd Haskell
