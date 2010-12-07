@@ -5,6 +5,8 @@ set -e
 export PATH=$PATH:$HOME/.cabal/bin
 # another huge hack. let's fix this properly soon TODO
 export LD_LIBRARY_PATH=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/    
+export HUBRIS_DIR=~/tmp
+mkdir $HUBRIS_DIR || true
 
 # rm `which Hubrify`
 cd Haskell
@@ -23,5 +25,5 @@ rvm 1.9.1
 gem install bundler # i am aware how awful this is.
 bundle install
 rake compile
-rm /var/hubris/*/* /tmp/hubris*
+rm -rf $HUBRIS_DIR/*
 rake
