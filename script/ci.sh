@@ -19,7 +19,7 @@ ghc-$ghc_version --make Setup
 # this is pretty ugly - this line creates the Includes.hs file, 
 # as cabal install ignores the given Setup.hs. FIXME
 ./Setup configure --extra-include-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1/x86_64-linux --extra-include-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1/ --extra-lib-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/ --user  --enable-shared  
-cabal install --extra-include-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1/x86_64-linux --extra-include-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1/ --extra-lib-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/ --user  --enable-shared  
+cabal install --extra-include-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1/x86_64-linux --extra-include-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/include/ruby-1.9.1/ --extra-lib-dirs=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/ --user  --enable-shared  --with-ghc=ghc-$ghc_version
 cd ..
 
 
