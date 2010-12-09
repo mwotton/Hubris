@@ -9,71 +9,93 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Mark Wotton", "Josh Price", "James Britt"]
-  s.date = %q{2010-08-25}
+  s.date = %q{2010-09-17}
   s.description = %q{a bridge between Haskell and Ruby}
   s.email = %q{mwotton@gmail.com}
   s.executables = ["ghc_builder", "jhc_builder"]
+  s.extensions = ["ext/stub/extconf.rb"]
   s.extra_rdoc_files = [
     "README.markdown"
   ]
   s.files = [
     ".gitignore",
-     "CommonErrors.txt",
+     ".rvmrc",
+     "Gemfile",
      "HISTORY.markdown",
+     "Haskell/Hubrify.hs",
+     "Haskell/LICENSE",
+     "Haskell/Language/Ruby/Foo.hs",
+     "Haskell/Language/Ruby/Hubris.hs",
+     "Haskell/Language/Ruby/Hubris/Binding.chs",
+     "Haskell/Language/Ruby/Hubris/GHCBuild.hs",
+     "Haskell/Language/Ruby/Hubris/Hash.hs",
+     "Haskell/Language/Ruby/Hubris/Interpolator.hs",
+     "Haskell/Language/Ruby/Hubris/LibraryBuilder.hs",
+     "Haskell/Language/Ruby/Hubris/ZCode.hs",
+     "Haskell/Language/Ruby/Wrappers.hs",
+     "Haskell/Language/Ruby/testLib.hs",
+     "Haskell/Setup.hs",
+     "Haskell/cbits/rshim.c",
+     "Haskell/cbits/rshim.h",
+     "Haskell/hubris.cabal",
+     "INSTALL",
      "Manifest.txt",
      "PostInstall.txt",
      "README.markdown",
      "Rakefile",
      "VERSION",
-     "bin-scripts/ghc_builder",
-     "bin-scripts/jhc_builder",
      "bin/ghc_builder",
      "bin/jhc_builder",
-     "examples/simple_inline/clean_and_run.sh",
-     "examples/simple_inline/haskell_math.rb",
-     "examples/simple_rack_app/Test.hs",
-     "examples/simple_rack_app/config.ru",
-     "examples/simple_rack_app/hsload.rb",
+     "doc/CommonErrors.txt",
+     "doc/CommonErrors.txt~HEAD",
+     "doc/don_feedback.txt",
+     "doc/haskell-hubris.tex",
+     "doc/new_interface.rb",
+     "doc/ruby-hubris.tex",
+     "doc/wisdom_of_ancients.txt",
      "ext/stub/extconf.rb",
      "ext/stub/stub.c",
      "hubris.gemspec",
      "lib/Makefile",
      "lib/hubris.rb",
-     "lib/stub.bundle",
-     "lib/stub.so",
      "rspec.rake",
      "sample/Fibonacci.hs",
      "sample/config.ru",
+     "script/ci.sh",
      "script/console",
-     "script/destroy",
-     "script/generate",
      "spec/hubris_spec.rb",
      "spec/spec.opts",
-     "spec/spec_helper.rb"
+     "spec/spec_helper.rb",
+     "tasks/extconf.rake",
+     "tasks/extconf/stub.rake"
   ]
   s.homepage = %q{http://github.com/mwotton/hubris}
   s.rdoc_options = ["--charset=UTF-8"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.3.6}
+  s.rubygems_version = %q{1.3.7}
   s.summary = %q{a bridge between Haskell and Ruby}
   s.test_files = [
-    "spec/spec_helper.rb",
-     "spec/hubris_spec.rb",
-     "examples/simple_inline/haskell_math.rb",
-     "examples/simple_rack_app/hsload.rb"
+    "spec/hubris_spec.rb",
+     "spec/spec_helper.rb"
   ]
 
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
-    if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
+    if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
       s.add_development_dependency(%q<rspec>, [">= 1.2.9"])
+      s.add_runtime_dependency(%q<open4>, [">= 0"])
+      s.add_runtime_dependency(%q<rake-compiler>, [">= 0"])
     else
       s.add_dependency(%q<rspec>, [">= 1.2.9"])
+      s.add_dependency(%q<open4>, [">= 0"])
+      s.add_dependency(%q<rake-compiler>, [">= 0"])
     end
   else
     s.add_dependency(%q<rspec>, [">= 1.2.9"])
+    s.add_dependency(%q<open4>, [">= 0"])
+    s.add_dependency(%q<rake-compiler>, [">= 0"])
   end
 end
 
