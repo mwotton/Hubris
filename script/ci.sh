@@ -15,6 +15,12 @@ cd Haskell
 cabal install --with-ghc=ghc-$ghc_version ||true
 # reinstall haskell stuff
 ghc-pkg-$ghc_version unregister hubris || true
+
+darcs clone http://code.haskell.org/hint/devel hint
+cd hint
+cabal install --with-ghc=ghc-$ghc_version
+cd ..
+
 ghc-$ghc_version --make Setup
 # this is pretty ugly - this line creates the Includes.hs file, 
 # as cabal install ignores the given Setup.hs. FIXME
@@ -26,6 +32,6 @@ cd ..
 rvm 1.9.1
 gem install bundler # i am aware how awful this is.
 bundle install
-rake compile
+bundle rake compile
 rm -rf $HUBRIS_DIR/*
-rake
+bundle rake
