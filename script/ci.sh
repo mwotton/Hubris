@@ -16,6 +16,7 @@ cabal install --with-ghc=ghc-$ghc_version ||true
 # reinstall haskell stuff
 ghc-pkg-$ghc_version unregister hubris || true
 
+rm -rf hint
 darcs clone http://code.haskell.org/hint/devel hint
 cd hint
 cabal install --with-ghc=ghc-$ghc_version
