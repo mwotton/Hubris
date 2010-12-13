@@ -33,7 +33,7 @@ Library
         --extra-include-dirs=/opt/local/include/ruby-1.9.1/ 
         --extra-lib-dirs: /opt/local/lib
         extra-libraries: ruby
-        build-depends:  ghc, Cabal>=1.7.4 && < 2.0, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint, HUnit
+        build-depends:  ghc, c2hs, Cabal>=1.7.4 && < 2.0, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint, HUnit
 
 Executable Hubrify
   Main-is:           Hubrify.hs
