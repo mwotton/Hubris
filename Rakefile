@@ -12,8 +12,9 @@ begin
     gem.description = "a bridge between Haskell and Ruby"
     gem.email = "mwotton@gmail.com"
     gem.homepage = "http://github.com/mwotton/hubris"
-    gem.add_development_dependency("rspec", ">= 1.2.9")
+    gem.add_development_dependency("rspec", "= 1.3.0")
     gem.add_dependency("open4")
+    gem.add_dependency("rake-compiler")
     gem.extensions = FileList["ext/**/extconf.rb"]
     gem.authors = ["Mark Wotton", "Josh Price", "James Britt"]
     gem.files.include('lib/stub.*')
