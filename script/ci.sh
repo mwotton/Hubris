@@ -10,6 +10,8 @@ mkdir $HUBRIS_DIR || true
 # source $HOME/.rvm/scripts/rvm || true
 # rvm reload
 
+# some build tools
+cabal install --with-ghc=ghc-$ghc_version happy alex||true
 # rm `which Hubrify`
 cd Haskell
 cabal install --with-ghc=ghc-$ghc_version ||true
