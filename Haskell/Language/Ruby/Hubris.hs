@@ -42,7 +42,7 @@ instance Rubyable a => Callable a where
 -- -- wrapIO too? Is there a more generic way of doin
 --             g this? would need a = a', b = IO c, so Rubyable b => Rubyable (IO c). (Throw away Show constraint, not necessary)
                                     
-data HubrisException = HubrisException
+data HubrisException = HubrisException String
   deriving(Show, Typeable)
 
 
@@ -60,7 +60,7 @@ traces = flip trace
 when :: Value -> RubyType -> a -> a
 when v b c = if (rubyType v == b)
                then c
-               else throw HubrisException
+               else trace (show (rubyType v,b)) $ throw (HubrisException "failed in when")
 
 class Haskellable a where
   toHaskell :: Value -> a
@@ -109,7 +109,7 @@ instance Haskellable Integer where
   toHaskell v = case rubyType v of
                   RT_BIGNUM -> trace ("got a big") $ read  $ unsafePerformIO (rb_big2str v 10 >>= str2cstr >>= peekCString)
                   RT_FIXNUM -> trace("got a fix") $ fromIntegral $ fix2int v
-                  _         -> throw HubrisException -- wonder if it's kosher to just let the pattern match fail...
+                  _         -> throw (HubrisException "Integer") -- wonder if it's kosher to just let the pattern match fail...
 
 instance  Rubyable Integer where
   toRuby i = trace ("integer to ruby") $ rb_str_to_inum (unsafePerformIO $ (newCAString $ show i) >>= rb_str_new2) 10 1
@@ -118,7 +118,7 @@ instance Haskellable Bool where
   toHaskell v = case rubyType v of
                 RT_TRUE  -> True
                 RT_FALSE -> False
-                _        -> throw HubrisException
+                _        -> throw (HubrisException "Bool")
 
 instance Rubyable Bool where
   toRuby True  = constToRuby RUBY_Qtrue
@@ -131,7 +131,7 @@ instance Haskellable Double where
   toHaskell v = case rubyType v of
                   RT_FLOAT  -> num2dbl v
                   RT_FIXNUM -> fromIntegral $ fix2int v
-                  _         -> throw HubrisException
+                  _         -> throw (HubrisException "Double")
 
 instance Rubyable Value where
   toRuby v = v
