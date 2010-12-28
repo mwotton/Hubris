@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, TypeSynonymInstances #-}
+{-# LANGUAGE ForeignFunctionInterface, CPP, TypeSynonymInstances #-}
 
 {- TODO
 
@@ -16,6 +16,7 @@ whichever ruby.h is first in the search place.
 
 
 module Language.Ruby.Hubris.Binding where
+ 
 #include "rshim.h"
 #include <ruby.h>
 
@@ -25,16 +26,127 @@ import Data.Word
 -- import Foreign.Ptr
 import Foreign.C.Types	
 import Foreign.C.String
--- import Foreign.Storable
 import System.IO.Unsafe (unsafePerformIO)
+import Data.Maybe
 
--- import Foreign.Marshal.Array
-
-{# context lib="rshim" #}
-
-{# enum RubyType {} deriving (Eq, Show) #} -- maybe Ord?
 rubyType :: Value -> RubyType
 rubyType = toEnum . rtype
+
+-- this is awful, but I don't want to pull in C2HS - it pulls in
+-- alex and happy, and they're difficult to specify as dependencies
+-- in cabal.
+
+#{enum Int,,
+       T_NONE, 
+       T_NIL, 
+       T_OBJECT, 
+       T_CLASS,
+       T_ICLASS,
+       T_MODULE  ,
+       T_FLOAT   ,
+       T_STRING  ,
+       T_REGEXP  ,
+       T_ARRAY   ,
+       T_FIXNUM  ,
+       T_HASH    ,
+       T_STRUCT  ,
+       T_BIGNUM  ,
+       T_FILE    ,
+ 
+       T_TRUE    ,
+       T_FALSE   ,
+       T_DATA    ,
+       T_MATCH   ,
+       T_SYMBOL  ,
+ 
+       T_UNDEF   ,
+       T_NODE    ,
+       T_MASK }
+
+data RubyType =  RT_NONE
+              |  RT_NIL      
+              |  RT_OBJECT   
+              | RT_CLASS    
+              | RT_ICLASS   
+              | RT_MODULE   
+              | RT_FLOAT    
+              | RT_STRING   
+              | RT_REGEXP   
+              | RT_ARRAY    
+              | RT_FIXNUM   
+              | RT_HASH     
+              | RT_STRUCT   
+              | RT_BIGNUM   
+              | RT_FILE     
+                
+              | RT_TRUE     
+              | RT_FALSE    
+              | RT_DATA     
+              | RT_MATCH    
+              | RT_SYMBOL   
+                
+              | RT_UNDEF    
+              | RT_NODE     
+              | RT_MASK     
+                deriving (Eq, Show)
+
+instance Enum RubyType where
+ fromEnum RT_NONE     = tNone
+
+ fromEnum RT_NIL      = tNil
+ fromEnum RT_OBJECT   = tObject
+ fromEnum RT_CLASS    = tClass
+ fromEnum RT_ICLASS   = tIclass
+ fromEnum RT_MODULE   = tModule
+ fromEnum RT_FLOAT    = tFloat
+ fromEnum RT_STRING   = tString
+ fromEnum RT_REGEXP   = tRegexp
+ fromEnum RT_ARRAY    = tArray
+ fromEnum RT_FIXNUM   = tFixnum
+ fromEnum RT_HASH     = tHash
+ fromEnum RT_STRUCT   = tStruct
+ fromEnum RT_BIGNUM   = tBignum
+ fromEnum RT_FILE     = tFile
+
+ fromEnum RT_TRUE     = tTrue
+ fromEnum RT_FALSE    = tFalse
+ fromEnum RT_DATA     = tData
+ fromEnum RT_MATCH    = tMatch
+ fromEnum RT_SYMBOL   = tSymbol
+ fromEnum RT_UNDEF    = tUndef
+ fromEnum RT_NODE     = tNode
+
+ fromEnum RT_MASK     = tMask
+ -- this is unnecessarily slow. fix it later.                        
+ toEnum x = fromJust $ lookup x assoc
+   where assoc = [( tNone   , RT_NONE)
+                 ,( tNil    , RT_NIL      )
+                 ,( tObject , RT_OBJECT   )
+                 ,( tClass  , RT_CLASS    )
+                 ,( tIclass , RT_ICLASS   )
+                 ,( tModule , RT_MODULE   )
+                 ,( tFloat  , RT_FLOAT    )
+                 ,( tString , RT_STRING   )
+                 ,( tRegexp , RT_REGEXP   )
+                 ,( tArray  , RT_ARRAY    )
+                 ,( tFixnum , RT_FIXNUM   )
+                 ,( tHash   , RT_HASH     )
+                 ,( tStruct , RT_STRUCT   )
+                 ,( tBignum , RT_BIGNUM   )
+                 ,( tFile   , RT_FILE     )
+                  
+                 ,( tTrue   , RT_TRUE     )
+                 ,( tFalse  , RT_FALSE    )
+                 ,( tData   , RT_DATA     )
+                 ,( tMatch  , RT_MATCH    )
+                 ,( tSymbol , RT_SYMBOL   )
+                 ,( tUndef  , RT_UNDEF    )
+                 ,( tNode   , RT_NODE     )
+                  
+                 ,( tMask   , RT_MASK     )]
+
+
+
 
 constToRuby :: RubyConst -> Value
 constToRuby = fromIntegral . fromEnum 
