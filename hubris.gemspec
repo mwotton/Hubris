@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Mark Wotton", "Josh Price", "James Britt"]
-  s.date = %q{2010-09-17}
+  s.date = %q{2010-12-28}
   s.description = %q{a bridge between Haskell and Ruby}
   s.email = %q{mwotton@gmail.com}
   s.executables = ["ghc_builder", "jhc_builder"]
@@ -26,7 +26,6 @@ Gem::Specification.new do |s|
      "Haskell/LICENSE",
      "Haskell/Language/Ruby/Foo.hs",
      "Haskell/Language/Ruby/Hubris.hs",
-     "Haskell/Language/Ruby/Hubris/Binding.chs",
      "Haskell/Language/Ruby/Hubris/GHCBuild.hs",
      "Haskell/Language/Ruby/Hubris/Hash.hs",
      "Haskell/Language/Ruby/Hubris/Interpolator.hs",
