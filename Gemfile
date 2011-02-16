@@ -1,5 +1,5 @@
 source :rubygems
-gem 'jeweler', '1.4.0'
+gem 'jeweler', '1.5.1'
 gem  'gemcutter'
 gem 'rspec', '1.3.0'
 gem 'rake'

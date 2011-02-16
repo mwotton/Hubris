@@ -97,7 +97,7 @@ describe "BigInt" do
   end
 
   before(:each) do
-    pending
+    # pending
     @b = Bigint.new
   end
 
@@ -161,7 +161,7 @@ describe "BigID" do
   end
 
   it 'returns a big fix'  do
-    pending
+
     @b.big_inc(1073741824).should == 1073741824
   end
 end

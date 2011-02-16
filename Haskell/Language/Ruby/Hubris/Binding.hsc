@@ -206,7 +206,11 @@ foreign import ccall safe "intern.h rb_hash_aref" rb_hash_aref :: Value -> Value
 
 
 createException :: String -> IO Value
-createException s = newCAString s >>= buildException --  ("puts HaskellError.methods(); HaskellError.new") >>= rb_eval_string
+createException s = do putStrLn "creating an exception"
+                       putStrLn s
+                       e <- (newCAString s >>= buildException) --  ("puts HaskellError.methods(); HaskellError.new") >>= rb_eval_string
+                       putStrLn ("exception looks like: " ++ show e)
+                       return e
 
 
 

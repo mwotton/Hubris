@@ -90,7 +90,7 @@ begin
 
 end
 
-task :spec => :check_dependencies
+# task :spec => :check_dependencies
 
 begin
   require 'reek/adapters/rake_task'

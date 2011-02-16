@@ -116,25 +116,29 @@ genC exports (Zname zmoduleName) = unlines $
          ] ++ map cDef exports ++  ["}"]
   where
     cWrapper :: (String,Int) -> String
-    cWrapper (f,arity) = let res = unlines ["VALUE " ++ f ++ "(VALUE mod, VALUE v){"
-                                         ,"  eprintf(\""++f++" has been called\\n\");"
-                               -- also needs to curry on the ruby side
-
-                               -- v is actually an array now, so we need to stash each element in
-                               -- a nested haskell tuple. for the moment, let's just take the first one.
+    cWrapper (f,arity) = 
+      let res = unlines 
+                ["VALUE hubrish_" ++ f ++ "("++ (concat . intersperse "," . take arity $ repeat "VALUE") ++ ");",
+                 "VALUE " ++ f ++ "(VALUE mod, VALUE v){"
+                ,"  eprintf(\""++f++" has been called\\n\");"
+                 -- also needs to curry on the ruby side
+                 
+                 -- v is actually an array now, so we need to stash each element in
+                 -- a nested haskell tuple. for the moment, let's just take the first one.
                                
-                                         ,"  VALUE res = hubrish_" ++ f ++ "(" ++ intercalate "," ["rb_ary_entry(v," ++ show i ++ ")"| i<- [0..(arity-1)]] ++ ");"
-                                         ,"  eprintf(\"hubrish "++f++" has been called\\n\");"
---                              ,"  return res;"
-                                         ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
-                                         ,"    eprintf(\""++f++" has provoked an exception\\n\");"                               
-                                         ,"    rb_exc_raise(res);"
-                                         ,"  } else {"
-                                         ,"    eprintf(\"returning from "++f++"\\n\");"
-                                         ,"    return res;"
-                                         ,"  }"
-                                         ,"}"]
-                       in res 
+                ,"  unsigned long res = hubrish_" ++ f ++ "(" ++ intercalate "," ["rb_ary_entry(v," ++ show i ++ ")"| i<- [0..(arity-1)]] ++ ");"
+                ,"  eprintf(\"hubrish "++f++" has been called\\n\");"
+                ,"  eprintf(\"result is %p\\n\",res);"
+                 --                                         ,"  res = res | 0x100000000;"
+                ,"  if (rb_obj_is_kind_of(res,rb_eException)) {"
+                ,"    eprintf(\""++f++" has provoked an exception\\n\");"                               
+                ,"    rb_exc_raise(res);"
+                ,"  } else {"
+                ,"    eprintf(\"returning from "++f++"\\n\");"
+                ,"    return res;"
+                ,"  }"
+                ,"}"]
+      in res 
 
     cDef :: (String,Int) -> String
     -- adef f =  "  eprintf(\"Defining |" ++ f  ++ "|\\n\");\n" ++ "rb_define_method(Fake, \"" ++ f ++"\","++ f++", 1);"
@@ -149,8 +153,9 @@ haskellBoilerplate moduleName = unlines ["{-# LANGUAGE ForeignFunctionInterface,
                                          "import Control.Exception",
                                          "import Data.Either",
                                          "import Data.Function(($))",
-                                         "import qualified Prelude as P(show)",
+                                         "import qualified Prelude as P(show,putStrLn)",
                                          "import Data.Tuple (uncurry)",
+                                         "import Foreign.C.Types",
                                          "import qualified " ++ moduleName]
 
 
@@ -159,11 +164,12 @@ haskellBoilerplate moduleName = unlines ["{-# LANGUAGE ForeignFunctionInterface,
 genWrapper (func,arity) mod = unlines $ [func ++ " :: " ++ myType
                                             ,func ++ " " ++  unwords symbolArgs ++ " = " ++ defHask 
                                             ,"foreign export ccall \"hubrish_" ++  func ++ "\" " ++ func ++ " :: " ++ myType]
-  where myType = intercalate "->" (take (1+arity) $ repeat " Value ")
+  where myType = intercalate "->" (take (1+arity) $ repeat " CULong ")
         -- mark's patented gensyms. just awful.
         symbolArgs = take arity $ map ( \ x -> "fake_arg_symbol_"++[x]) ['a' .. 'z']
         defHask = "unsafePerformIO $ do\n  r <- try $ evaluate $ toRuby $" ++ mod ++"."++ func  ++ " " ++ unwords (map (\ x -> "(toHaskell " ++ x ++ ")") symbolArgs) ++ "\n  case r of\n" ++     
-                  unlines ["   Left (e::SomeException) -> createException (P.show e) `traces` \"died in haskell\"",
+--                  unlines ["   Left (e::SomeException) -> createException (P.show e) `traces` (\"died in haskell wrapper\" P.++ P.show e) ",
+                  unlines ["   Left (e::SomeException) ->  createException (P.show e) >>= \\e2 -> P.putStrLn (\"in generated haskell: \") >> P.putStrLn (P.show e2) >> return e2",
                            "   Right a -> return a"]
  
 say :: String -> InterpreterT IO ()
