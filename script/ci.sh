@@ -8,6 +8,9 @@ export PATH=$PATH:$HOME/.cabal/bin
 export LD_LIBRARY_PATH=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/    
 export HUBRIS_DIR=~/tmp
 mkdir $HUBRIS_DIR || true
+rm -rf $HUBRIS_DIR/* || true
+rm -rf /tmp/hubris* ||true
+cabal install zlib # needed for tests
 # source $HOME/.rvm/scripts/rvm || true
 # rvm reload
 
