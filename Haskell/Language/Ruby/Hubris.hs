@@ -9,7 +9,7 @@ import Data.Map as Map
 import Language.Ruby.Hubris.Binding
 --import Control.Monad (forM)
 import Control.Applicative
-import Debug.Trace
+import qualified Debug.Trace as T
 import Foreign.C.String
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
@@ -54,6 +54,8 @@ sshow s = Prelude.map w2c $S.unpack s
 lshow :: L.ByteString -> [Char]
 lshow s = Prelude.map w2c $L.unpack s
 
+-- debugging only
+trace a b = b
 traces :: b -> String -> b
 traces = flip trace
 
@@ -205,20 +207,18 @@ instance (Ord a, Eq a, Rubyable a, Rubyable b) => Rubyable (Map.Map a b) where
 instance (Ord a, Eq a, Haskellable b, Haskellable a) => Haskellable (Map.Map a b) where
   toHaskell hash = when hash RT_HASH $ unsafePerformIO $ 
                 -- fromJust is legit, rb_keys will always return list
-                     do putStrLn "Bringing hash over" 
+                     do -- putStrLn "Bringing hash over" 
                         keys <- rb_keys hash
-                        putStrLn ("got the keys: "  ++ show keys)
+                        -- putStrLn ("got the keys: "  ++ show keys)
                         l :: [Value] <- toHaskell <$> rb_keys hash
-                        putStrLn ("translated the keys: "  ++ show l)
 
-                        r <- foldM (\m k -> do putStrLn $ "Key is " ++ show k
+                        r <- foldM (\m k -> do -- putStrLn $ "Key is " ++ show k
                                                val <- rb_hash_aref hash k
-                                               putStrLn $ "Val is " ++ show val
+                                               -- putStrLn $ "Val is " ++ show val
                                                return $ Map.insert (toHaskell k) 
                                                               (toHaskell val)
                                                               m)
                                     Map.empty l
-                        putStrLn "Folded and returning"
                         return r
                                                    
 

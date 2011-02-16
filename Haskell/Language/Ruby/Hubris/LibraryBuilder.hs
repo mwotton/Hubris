@@ -96,7 +96,7 @@ genC exports (Zname zmoduleName) = unlines $
           ,"#include <stdlib.h>"
           ,"#define HAVE_STRUCT_TIMESPEC 1"
           ,"#include <ruby.h>"
-          ,"#define DEBUG 1"
+--          ,"#define DEBUG 1"
           ,"#ifdef DEBUG"
           ,"#define eprintf printf"
           ,"#else"
@@ -169,11 +169,12 @@ genWrapper (func,arity) mod = unlines $ [func ++ " :: " ++ myType
         symbolArgs = take arity $ map ( \ x -> "fake_arg_symbol_"++[x]) ['a' .. 'z']
         defHask = "unsafePerformIO $ do\n  r <- try $ evaluate $ toRuby $" ++ mod ++"."++ func  ++ " " ++ unwords (map (\ x -> "(toHaskell " ++ x ++ ")") symbolArgs) ++ "\n  case r of\n" ++     
 --                  unlines ["   Left (e::SomeException) -> createException (P.show e) `traces` (\"died in haskell wrapper\" P.++ P.show e) ",
-                  unlines ["   Left (e::SomeException) ->  createException (P.show e) >>= \\e2 -> P.putStrLn (\"in generated haskell: \") >> P.putStrLn (P.show e2) >> return e2",
+                  unlines ["   Left (e::SomeException) ->  createException (P.show e)" ,
                            "   Right a -> return a"]
  
 say :: String -> InterpreterT IO ()
-say = liftIO . putStrLn
+-- say = liftIO . putStrLn
+say _ = return ()
 
 -- Local Variables:
 -- compile-command: "cd ../../../; ./Setup build"

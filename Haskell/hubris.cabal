@@ -19,6 +19,22 @@ Description:    Support library for Hubris, the Ruby to Haskell bridge
                 .
                 Anyway, this version strips the boilerplate that used to be necessary, and is intended to be used in conjunction with <http://github.com/mwotton/Hubris>.
 
+Library
+        -- the ordering is critical, because Cabal doesn't do dependency analysis.
+        Exposed-Modules: Language.Ruby.Hubris.Binding, Language.Ruby.Hubris, Language.Ruby.Hubris.LibraryBuilder, Language.Ruby.Hubris.ZCode, Language.Ruby.Hubris.GHCBuild, Includes
+        c-sources: cbits/rshim.c
+        -- includes:  cbits/rshim.h
+        install-includes:  cbits/rshim.h
+        include-dirs: cbits
+        cc-options: -U__BLOCKS__ -DHAVE_SNPRINTF
+        extra-libraries: ruby
+        -- a proper fix for this would involve autoconf and I'm not feeling up to it.
+        -- best to pass the args on the command line.
+        --extra-include-dirs=/opt/local/include/ruby-1.9.1/ 
+        --extra-lib-dirs: /opt/local/lib
+        extra-libraries: ruby
+        build-depends:  ghc,  Cabal>=1.7.4 && < 2.0, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint >= 0.3.3.2, HUnit
+
 Executable Hubrify
   Main-is:           Hubrify.hs
   Build-Depends:     base >= 3 && < 5, ghc, Cabal>=1.7.4 && < 2.0, base, haskell98, containers, bytestring, array, mtl, old-time, ghc-paths, hint, process

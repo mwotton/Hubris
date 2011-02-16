@@ -288,7 +288,7 @@ describe "Overwrite" do
       hubris :inline => "myid::Int -> Int; myid i = i+1"
     end
     t=Overlapping.new
-    puts t.methods
+    # puts t.methods
     t.myid(1).should eql(2)
   end
   

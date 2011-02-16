@@ -88,7 +88,7 @@ module Hubris
                                 (packages+@@basepackages).collect{|x| "--package #{x}"}.join(' ') + ' ' + src)
       # if Hubrify's not installed, we throw an exception. just as
       # good as explicitly checking a flag.
-      puts msg
+      # puts msg
       raise HaskellError.new("Hubrify error:\n#{msg + status.exitstatus.to_s}") unless status.exitstatus == 0
     end
     return libFile
@@ -104,7 +104,7 @@ module Hubris
   
   def self.noisy(str)
     pid, stdin, stdout, stderr = Open4.popen4 str
-    puts "running #{str}\n"
+    # puts "running #{str}\n"
 
 
     # puts "Status: #{status.exitstatus}"
