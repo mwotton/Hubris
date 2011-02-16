@@ -10,7 +10,7 @@ export HUBRIS_DIR=~/tmp
 mkdir $HUBRIS_DIR || true
 rm -rf $HUBRIS_DIR/* || true
 rm -rf /tmp/hubris* ||true
-cabal install zlib # needed for tests
+cabal install zlib --user  --enable-shared # needed for tests
 # source $HOME/.rvm/scripts/rvm || true
 # rvm reload
 
