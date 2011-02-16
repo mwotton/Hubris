@@ -33,6 +33,7 @@ ghcBuild libFile immediateSource modName extra_sources c_sources args =
     do -- putStrLn ("modname is " ++ modName)
           putStrLn immediateSource
           haskellSrcFile <- withTempFile "hubris_XXXXX.hs" immediateSource
+          putStrLn ("ghc is " ++ ghc)
           (code, out, err) <- noisySystem ghc $ standardGHCFlags ++ ["-o",libFile,"-optl-Wl,-rpath," ++ libdir,
                                                                      haskellSrcFile, "-L" ++ libdir] ++ extra_sources ++ c_sources ++ args
           return $ case code of

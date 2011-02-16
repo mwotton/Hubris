@@ -63,8 +63,6 @@ main = do
    -- putStrLn $ show $ optPackages o
 
    res <- generateLib (optOutput o) srcs (optModule o) ("-fPIC":ghcArgs) (optPackages o)
-   when (optVerbose o) (putStr $unlines msgs)
-   
    -- print res
    case res of
      Left a  -> putStrLn ("Failed: " ++ a) >> exitFailure

@@ -116,6 +116,7 @@ ran   |#{str}|
 output|#{stdout.read}|
 error |#{stderr.read}|
 EOF
+    puts msg
     ignored, status = Process.waitpid2 pid
     msg += "status |#{status}|"
     return status, msg
