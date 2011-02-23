@@ -27,7 +27,6 @@ class File
 end
 
 module Hubris
-  VERSION = '0.0.3'
   HUBRIS_DIR = ENV['HUBRIS_DIR'] || "/var/hubris"
   SO_CACHE = File.expand_path(HUBRIS_DIR + "/cache")
   HS_CACHE = File.expand_path(HUBRIS_DIR + "/source")
