@@ -1,3 +1,4 @@
 
 puts "I AM A BANANA"
-raise "FUCK YOOOOOOOOOOOOU"
+# raise "FUCK YOOOOOOOOOOOOU"
+system "touch Makefile"
