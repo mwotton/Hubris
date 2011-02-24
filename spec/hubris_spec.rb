@@ -385,9 +385,6 @@ describe 'Realworld' do
 end
 
 describe 'Performance' do
-  def be_quick
-    simple_matcher("a small duration") { |given| given < 0.1 }
-  end
 
   it "caches its output" do
     # only relevant for inlining
@@ -401,7 +398,7 @@ describe 'Performance' do
     end
     after = Time.now    
 
-    (after-before).should be_quick
+    (after-before).should < 0.1
   end
 
   it "behaves memory-wise" do

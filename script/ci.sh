@@ -17,6 +17,7 @@ rm `which Hubrify` || true
 rvm 1.9.1
 gem build hubris.gemspec
 gem install hubris-0.0.4.gem # can we do these two in one step?
+rspec spec
 
 #gem install bundler # i am aware how awful this is.
 #bundle install
