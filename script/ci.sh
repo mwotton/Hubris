@@ -14,7 +14,8 @@ cabal install zlib --user  --enable-shared # needed for tests
 # delete old haskell stuff
 ghc-pkg-$ghc_version unregister hubris || true
 rm `which Hubrify` || true
-rvm 1.9.1
+rvm $ruby_version
+bundle
 gem build hubris.gemspec
 gem install hubris-0.0.4.gem # can we do these two in one step?
 rspec spec
