@@ -34,7 +34,7 @@ extraIncludeDirs = [\"#{headers}\", \"#{arch_headers}\"]"
 #  command="cd Haskell; cabal update; cabal install
   #  --extra-include-dirs=#{RbConfig::CONFIG['rubyhdrdir']}
   #  --extra-include-dirs=#{RbConfig::CONFIG['rubyhdrdir']}/#{RbConfig::CONFIG['arch']} --extra-lib-dirs=#{RbConfig::CONFIG['libdir']} --user  --enable-shared  --with-ghc=#{ghc_version}"
-  command="cd Haskell; cabal install --extra-include-dirs=#{arch_headers} --extra-include-dirs=#{headers} --extra-lib-dirs=#{lib_dir} --user  --enable-shared  --with-ghc=#{ghc_version}"
+  command="cabal update; cd Haskell; cabal install --extra-include-dirs=#{arch_headers} --extra-include-dirs=#{headers} --extra-lib-dirs=#{lib_dir} --user  --enable-shared  --with-ghc=#{ghc_version}"
   result=%x{#{command}}
   raise "ERROR: ran #{command}, got #{result}" unless $?.success? 
 end
