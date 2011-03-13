@@ -169,9 +169,9 @@ instance Enum RubyConst where
   toEnum 12 = RUBY_Qnil
 -- {# enum ruby_special_consts as RubyConst {} deriving (Eq,Show) #}
 
-str2cstr str = rb_str2cstr str 0
+-- str2cstr str = rb_str2cstr str
 type Value = CULong -- FIXME, we'd prefer to import the type VALUE directly
-foreign import ccall safe "ruby.h rb_str2cstr"    rb_str2cstr    :: Value -> CInt -> IO CString
+
 foreign import ccall safe "ruby.h rb_str_new2"    rb_str_new2    :: CString -> IO Value
 foreign import ccall safe "ruby.h rb_str_new2"    rb_str_new_    :: CString -> Int -> IO Value 
 foreign import ccall safe "ruby.h rb_ary_new2"    rb_ary_new2    :: CLong -> IO Value
@@ -186,7 +186,7 @@ rb_str_new = uncurry rb_str_new_
 -- we're being a bit filthy here - the interface is all macros, so we're digging in to find what it actually is
 foreign import ccall safe "rshim.h rb_ary_len" rb_ary_len :: Value -> CUInt
 foreign import ccall safe "rshim.h rtype"      rtype      :: Value -> Int
-
+foreign import ccall safe "rshim.h str2cstr"   str2cstr    :: Value -> IO CString
 foreign import ccall safe "rshim.h int2fix"    int2fix    :: Int -> Value
 foreign import ccall safe "rshim.h fix2int"    fix2int    :: Value -> Int
 foreign import ccall safe "rshim.h num2dbl"    num2dbl    :: Value -> Double  -- technically CDoubles, but jhc promises they're the same

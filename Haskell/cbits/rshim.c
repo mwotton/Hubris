@@ -44,3 +44,6 @@ VALUE buildException(char * message) {
   return errobj;
 }
 
+char * str2cstr(VALUE v) {
+  StringValuePtr(v);
+}

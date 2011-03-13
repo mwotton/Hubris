@@ -11,6 +11,7 @@ double num2dbl(VALUE x);
 unsigned int rb_ary_len(VALUE x);
 VALUE keys(VALUE hash);
 VALUE buildException(char *);
+char * str2cstr(VALUE v);
 // argh, and again
 enum RubyType {
  RT_NONE     = T_NONE,
