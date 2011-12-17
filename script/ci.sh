@@ -4,7 +4,7 @@ ghc_version=$1
 set -e
 export PATH=$PATH:$HOME/.cabal/bin
 # another huge hack. let's fix this properly soon TODO
-# export LD_LIBRARY_PATH=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/    
+# export LD_LIBRARY_PATH=$HOME/.rvm/rubies/ruby-1.9.1-p378/lib/
 export HUBRIS_DIR=~/tmp
 mkdir $HUBRIS_DIR || true
 rm -rf $HUBRIS_DIR/* || true

@@ -47,27 +47,27 @@ LIBRUBY = $(LIBRUBY_SO)
 LIBRUBY_A = lib$(RUBY_SO_NAME)-static.a
 LIBRUBYARG_SHARED = -l$(RUBY_SO_NAME)
 LIBRUBYARG_STATIC = -l$(RUBY_SO_NAME)-static
-OUTFLAG = -o 
-COUTFLAG = -o 
+OUTFLAG = -o
+COUTFLAG = -o
 
-RUBY_EXTCONF_H = 
+RUBY_EXTCONF_H =
 cflags   = $(optflags) $(debugflags) $(warnflags)
 optflags = -O2
 debugflags = -g
 warnflags = -Wall -Wno-parentheses
-CFLAGS   =  -fno-common -O2 $(cflags)  -fno-common -pipe -fno-common 
+CFLAGS   =  -fno-common -O2 $(cflags)  -fno-common -pipe -fno-common
 INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir)
-DEFS     = 
+DEFS     =
 CPPFLAGS =  -I/opt/local/include -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE $(DEFS) $(cppflags)
 CXXFLAGS = $(CFLAGS) -O2 $(cxxflags)
 ldflags  = -L. -L/opt/local/lib -L/usr/local/lib
-dldflags = 
-archflag = 
+dldflags =
+archflag =
 DLDFLAGS = $(ldflags) $(dldflags) $(archflag)
 LDSHARED = cc -dynamic -bundle -undefined suppress -flat_namespace
 LDSHAREDXX = $(LDSHARED)
 AR = ar
-EXEEXT = 
+EXEEXT =
 
 RUBY_INSTALL_NAME = ruby
 RUBY_SO_NAME = ruby
@@ -87,27 +87,27 @@ COPY = cp
 
 #### End of system configuration section. ####
 
-preload = 
+preload =
 
 libpath = . $(libdir)
 LIBPATH =  -L. -L$(libdir)
-DEFFILE = 
+DEFFILE =
 
 CLEANFILES = mkmf.log
-DISTCLEANFILES = 
-DISTCLEANDIRS = 
+DISTCLEANFILES =
+DISTCLEANDIRS =
 
-extout = 
-extout_prefix = 
-target_prefix = 
-LOCAL_LIBS = 
-LIBS = $(LIBRUBYARG_SHARED)  -lpthread -ldl -lobjc  
+extout =
+extout_prefix =
+target_prefix =
+LOCAL_LIBS =
+LIBS = $(LIBRUBYARG_SHARED)  -lpthread -ldl -lobjc
 SRCS = HubrisStubLoader.c
 OBJS = HubrisStubLoader.o
 TARGET = HubrisStubLoader
 DLLIB = $(TARGET).bundle
-EXTSTATIC = 
-STATIC_LIB = 
+EXTSTATIC =
+STATIC_LIB =
 
 BINDIR        = $(bindir)
 RUBYCOMMONDIR = $(sitedir)$(target_prefix)
@@ -117,7 +117,7 @@ HDRDIR        = $(rubyhdrdir)/ruby$(target_prefix)
 ARCHHDRDIR    = $(rubyhdrdir)/$(arch)/ruby$(target_prefix)
 
 TARGET_SO     = $(DLLIB)
-CLEANLIBS     = $(TARGET).bundle 
+CLEANLIBS     = $(TARGET).bundle
 CLEANOBJS     = *.o  *.bak
 
 all:    $(DLLIB)

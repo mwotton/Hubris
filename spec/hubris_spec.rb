@@ -23,7 +23,7 @@ foo False = True"; end
   it "doesn't get fussy about non-exportable stuff" do
     lambda { class Empty; hubris :inline => "data Foo=Foo; fooerator :: Foo->Foo; fooerator Foo = Foo";end }.should_not raise_error
   end
-  
+
   it "handles booleans" do
     class Bar
       hubris :inline => "my_negate True = False;my_negate False = True", :no_strict => true
@@ -34,7 +34,7 @@ foo False = True"; end
     t.my_negate(true).should eql(false)
     lambda{ t.my_negate("Banana")}.should raise_error
   end
-end  
+end
   #   it "handles booleans" do
   #     class Bar
   #       hubris :inline => "my_negate True = False;my_negate False = True", :no_strict => true
@@ -60,7 +60,7 @@ describe "Floats" do
 end
 
 describe "Strings" do
-  it "can reverse a string" do 
+  it "can reverse a string" do
     class Stringer
       hubris :inline => "import Data.ByteString; my_reverse::ByteString->ByteString; my_reverse s = Data.ByteString.reverse s", :no_strict => true
     end
@@ -75,7 +75,7 @@ describe "tuples" do
       hubris :inline => "expand :: (Integer,Integer) -> (Integer,Integer,Integer); expand (a,b) = (b,a,b)"
     end
   end
-  
+
   before :each do
     @t = Tupler.new
   end
@@ -117,7 +117,7 @@ describe "BigInt" do
   # it 'tests' do
   #   low = 536870912
   #   high = 1073741825
-    
+
   #   while low != high
   #     mid = (high + low)/2
   #     puts "mid is #{mid}"
@@ -136,15 +136,15 @@ describe "BigInt" do
   it 'handles > 30 bits' do
     @b.big_inc(1073741823).should == 1073741824
   end
-  
+
   it "handles really big ints" do
     @b.big_inc(1000000000000000000000000).should eql(1000000000000000000000001)
   end
-  
+
   it "handles ints just before the border" do
     @b.big_inc(2147483647).should == 2147483648
   end
-  
+
   it "handles > int but < bigint" do
     @b.big_inc(2147483648).should == 2147483649
   end
@@ -173,7 +173,7 @@ describe 'Multiple' do
       def foo_local
         14
       end
-      hubris :inline => "mydouble::Int->Int; mydouble i =(i + i)" 
+      hubris :inline => "mydouble::Int->Int; mydouble i =(i + i)"
       hubris :inline => "incr::Int->Int;incr i = 1+i"
     end
     t=Multiple.new
@@ -190,7 +190,7 @@ describe 'Arrays' do
     class ArrayTest
       hubris :inline => "mylength :: [Int] -> Int; mylength [] = 0; mylength (_:xs) = 1 + mylength xs"
     end
-    
+
     ArrayTest.new.mylength([1,2,3,4]).should eql(4)
   end
   it "returns a haskell list as  an array" do
@@ -238,7 +238,7 @@ describe "MaybeIn" do
     # Here, however, we're not passing in a nil, so we get a "Just 'something'", and never
     # deeply examine the something. Arguably, it would be less surprising if we always looked
     # deeply into it, but it's up for debate. TODO
-    
+
     #lazy = MaybeLazy.new
     #lazy.foo("blah").should == 1
   end
@@ -254,7 +254,7 @@ describe 'Hashes' do
     rh[2].should == 2
     rh[1].should == 3
   end
-  
+
   it "can move a ruby map to haskell" do
     class RubyMap
       hubris :inline => "import Data.Map; h :: Map Int Int -> Maybe Int; h m = Data.Map.lookup 10 m"
@@ -263,13 +263,13 @@ describe 'Hashes' do
     rb.h({8 => 100, 2 => 7}).should eql(nil)
     rb.h({10 => 100, 2 => 7}).should eql(100)
   end
-  
+
 end
 
 
 
 describe "Blocks" do
-  
+
   it "can be called in a block" do
     class T2
       hubris :inline => "foo::Integer->Integer;foo i = -i"
@@ -291,8 +291,8 @@ describe "Overwrite" do
     # puts t.methods
     t.myid(1).should eql(2)
   end
-  
-  
+
+
 end
 
 describe "Exceptions" do
@@ -311,17 +311,17 @@ describe "Exceptions" do
         hubris :inline => "incomplete :: Int -> Bool; incomplete 1 = True"
       end
     }.should raise_error(HaskellError)
-    lambda { 
+    lambda {
       class IncompleteButOk
         hubris :inline => "incomplete :: Int -> Bool; incomplete 1 = True" , :no_strict => true
       end
     }.should_not raise_error()
-    
+
   end
 
 end
 
-describe 'Idempotence' do 
+describe 'Idempotence' do
   it "doesn't affect other modules" do
     class Existing
     end
@@ -335,7 +335,7 @@ describe 'Idempotence' do
     lambda{ t.fun(10)}.should_not raise_error(NoMethodError)
     t.fun(10).should eql(11)
   end
-  
+
   it "can insert the same code into two ruby modules" do
 
     class Foo10
@@ -357,11 +357,11 @@ describe 'Realworld' do
     class ByteString
       hubris :module => "Data.ByteString", :no_strict => true
     end
-    
+
     b = ByteString.new
     b.sort("zabcdfg").should == "abcdfgz"
   end
-  
+
   it "can import zlib" do
 
     class ZLib
@@ -371,7 +371,7 @@ describe 'Realworld' do
     w="osatnoensauhoestnuhoastuhoeatnuhosnueohnsauostneo"
         pending "Not doing the right thing with embedded nulls yet"
     # for the moment, we're happy if it errors out in a controlled way
-    
+
     lambda {z.decompress(z.compress(w)).should eql(w)}.should raise_error(HaskellError)
 
     x=z.compress(w)
@@ -381,22 +381,22 @@ describe 'Realworld' do
     puts "second"
     lambda {z.decompress(z.compress(w)).should eql(w)}.should_not raise_error
   end
-  
+
 end
 
 describe 'Performance' do
 
   it "caches its output" do
     # only relevant for inlining
-    
+
     class First
       hubris :inline => "foobar::Int->Int; foobar a = a"
     end
-    before = Time.now   
+    before = Time.now
     class Second
       hubris :inline => "foobar::Int->Int; foobar a = a"
     end
-    after = Time.now    
+    after = Time.now
 
     (after-before).should < 0.1
   end
@@ -408,7 +408,7 @@ describe 'Performance' do
     #   - caveman: ps, grep etc.
     #   - galois style (is that haskell-dtrace?)
   end
-  
+
   it "behaves concurrently" do
     # create a bunch of ruby threads which all call a given Haskell function
     # repeatedly. Checks that we get the right result, and that we don't crash.
@@ -419,7 +419,7 @@ describe 'Performance' do
       hubris :inline => "sumInts :: Int -> Int; sumInts n = sum [0..n]"
     end
     t = ConcTest.new
-    
+
     res = (0..no_threads).map { |n| (0..n).inject { |sum,n| sum+n } }
     threads = []
     lambda {
@@ -431,7 +431,7 @@ describe 'Performance' do
       threads.each { |t| t.join }
     }.should_not raise_error
   end
- 
+
 end
 
 describe "IO" do
@@ -447,15 +447,15 @@ ref = unsafePerformIO $ newIORef 10
 readRef :: IO Int
 readRef = readIORef ref
 modify :: Int -> IO ()
-modify n = writeIORef ref n 
+modify n = writeIORef ref n
 EOF
-      
+
     end
     i = IOTest.new
     i.readRef(nil).should == 10
     i.modify(20)
     i.readRef(nil).should == 20
-    
+
   end
 end
 

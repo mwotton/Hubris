@@ -4,8 +4,8 @@
 
 Hubris is a bridge between Ruby and Haskell, between love and bondage,
 between slothful indolence and raw, blazing speed. Hubris will wash
-your car, lie to your boss, and salvage your love life. If you are 
-very, very lucky, it might also let you get some functional goodness 
+your car, lie to your boss, and salvage your love life. If you are
+very, very lucky, it might also let you get some functional goodness
 into your ruby programs through the back door.
 
 I probably don't have to say this, but patches are very much

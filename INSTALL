@@ -1,7 +1,7 @@
-This is a bit involved at the moment, because you need to have a development version of GHC, 
+This is a bit involved at the moment, because you need to have a development version of GHC,
 as well as having a bootstrapping version of GHC to build it with.
 
-So, on Ubuntu, 
+So, on Ubuntu,
 
 sudo apt-get install ruby ruby-dev ghc libopenssl-ruby
 sudo gem install rake open4 rspec hoe

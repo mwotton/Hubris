@@ -28,7 +28,7 @@
 
 
 
-\begin{frame} 
+\begin{frame}
   \frametitle{I \ding{170} Haskell}
   \begin{itemize}
   \item<1-> Fast (optimised native code, multicore, etc)
@@ -42,19 +42,19 @@
 \begin{frame}
   \frametitle{the slide that's going to get me lynched}
   \center{JRuby vs GHC}
-  \begin{tabular}{l l l l} 
+  \begin{tabular}{l l l l}
     Program &	        Time	&Memory &	Source Size\\ \hline
     reverse-complement	&5	&1	&1/4\\
-    regex-dna	        &7	&3	&1/5\\	
-    binary-trees	        &8	&7	&1	\\	
-    k-nucleotide	        &10	&1	&1/7	\\	
-    pidigits	        &18	&18	&2	\\	
-    n-body	        &26	&53	&1	\\	
-    chameneos-redux	&30	&24	&1	\\	
-    fasta	                &31	&142	&1	\\	
-    fannkuch	        &45	&22	&1/4	\\	
-    spectral-norm	        &227	&56	&1/3	\\	
-    mandelbrot	        &319	&3	&1/2\\	
+    regex-dna	        &7	&3	&1/5\\
+    binary-trees	        &8	&7	&1	\\
+    k-nucleotide	        &10	&1	&1/7	\\
+    pidigits	        &18	&18	&2	\\
+    n-body	        &26	&53	&1	\\
+    chameneos-redux	&30	&24	&1	\\
+    fasta	                &31	&142	&1	\\
+    fannkuch	        &45	&22	&1/4	\\
+    spectral-norm	        &227	&56	&1/3	\\
+    mandelbrot	        &319	&3	&1/2\\
   \end{tabular}
 \end{frame}
 
@@ -99,15 +99,15 @@ Hubris is my bridge between the two
   \frametitle{lazy, statically typed, and pure}
   \begin{lstlisting}
 clMax lim = maximumBy (comparing snd) (assocs arr)
-  where arr = listArray (1,lim) 
+  where arr = listArray (1,lim)
                        (0:(map depth [2..]))
-        step x = if even x 
-                   then div x 2 
+        step x = if even x
+                   then div x 2
                    else 3 * x + 1
-        depth x = 1 + if n <= lim 
-                        then arr ! n 
+        depth x = 1 + if n <= lim
+                        then arr ! n
                         else depth n
-          where n = step x    
+          where n = step x
   \end{lstlisting}
 \end{frame}
 
