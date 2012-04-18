@@ -17,7 +17,7 @@ class File
   @@used = 0
   def self.withTempFile(template)
     # put the code in a temporary file, set opt[:source]
-    
+
     filename="/tmp/foo_#{$$}_#{@@used}.hs" # File::Temp.new(false)
     @@used += 1
     handle=File.open(filename, 'w')
@@ -39,7 +39,7 @@ module Hubris
   def self.add_packages(packages)
     @@basepackages.concat packages
   end
-  
+
   # load the new functions into target
   def hubris(options = { })
     # :inline beats :source beats :mod
@@ -62,28 +62,28 @@ module Hubris
 
   def anonymous_module(source,build_args)
     mod = "Inline_#{Digest::MD5.hexdigest(source + build_args.to_s)}"
-    filename = "#{HS_CACHE}/#{zencode(mod)}.hs" 
+    filename = "#{HS_CACHE}/#{zencode(mod)}.hs"
     File.open(filename, "w") {|h| h.write "module #{mod} where\nimport Language.Ruby.Hubris.Binding\n#{source}\n"}
     return filename
   end
 
   def gen_modname(filename)
-    # find the code, compile into haskell module in namespace, set 
+    # find the code, compile into haskell module in namespace, set
     l = File.open(filename).read
     l =~ /^ *module *([^ \t\n]*)/
     return $1
   end
 
   def zencode(name)
-    name.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zi').gsub(/_/,'zu').gsub(/'/, 'zq') 
+    name.gsub(/Z/, 'ZZ').gsub(/z/, 'zz').gsub(/\./,'zi').gsub(/_/,'zu').gsub(/'/, 'zq')
   end
-  
+
   def hubrify(mod, args, src,packages=[])
     libFile = "#{SO_CACHE}/#{zencode(mod)}.#{dylib_suffix}"
     headers = ""
     libraries = ""
     if @always_rebuild or !File.exists?(libFile)
-      status,msg = Hubris.noisy("Hubrify #{headers} #{libraries} -v --module #{mod} --output #{libFile} #{args.join(' ')} " + 
+      status,msg = Hubris.noisy("Hubrify #{headers} #{libraries} -v --module #{mod} --output #{libFile} #{args.join(' ')} " +
                                 (packages+@@basepackages).collect{|x| "--package #{x}"}.join(' ') + ' ' + src)
       # if Hubrify's not installed, we throw an exception. just as
       # good as explicitly checking a flag.
@@ -92,7 +92,7 @@ module Hubris
     end
     return libFile
   end
-  
+
   def dylib_suffix
     case Config::CONFIG['target_os']
     when /darwin/; "bundle"
@@ -100,7 +100,7 @@ module Hubris
     else;          "so" #take a punt
     end
   end
-  
+
   def self.noisy(str)
     pid, stdin, stdout, stderr = Open4.popen4 str
     # puts "running #{str}\n"
@@ -108,8 +108,8 @@ module Hubris
 
     # puts "Status: #{status.exitstatus}"
     # puts "#{pid} done"
-    
-    
+
+
     msg =<<-"EOF"
 ran   |#{str}|
 output|#{stdout.read}|
@@ -120,7 +120,7 @@ EOF
     msg += "status |#{status}|"
     return status, msg
   end
-  
+
 end
 
 # this may be sketchy :)
@@ -129,6 +129,6 @@ class Class
 end
 
 #    rescue LoadError
-#      raise HaskellError, "loading #{libFile} failed:\n#{$!.to_s}" + 
+#      raise HaskellError, "loading #{libFile} failed:\n#{$!.to_s}" +
 #        `nm #{libFile} 2>/dev/null` + "\n"
 #    end

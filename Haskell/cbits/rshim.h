@@ -1,6 +1,6 @@
 #ifndef __FOOSHIM__
 #define __FOOSHIM__ 1
-#define HAVE_STRUCT_TIMESPEC 1 
+#define HAVE_STRUCT_TIMESPEC 1
 #include <ruby.h>
 
 // did this really have to be a macro? BAD MATZ

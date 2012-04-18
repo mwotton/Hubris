@@ -14,7 +14,7 @@ void safe_hs_init() {
     loaded=1;
     // printf("really loading haskell runtime\n");
     hs_init(&argc, &argv);
-  } 
+  }
 }
 
 void Init_stub() {
@@ -25,5 +25,5 @@ void Init_stub() {
   // so, ok. we do do some stuff here.:) but it's really two separate things.
   VALUE Hubris = rb_define_module("Hubris");
   Exports = rb_define_module_under(Hubris, "Exports");
-  
+
 }

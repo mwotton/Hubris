@@ -1,10 +1,10 @@
-15:31 < mmorrow> blackdog: i think it's a matter of each .so having the correct list of .so's that its dependent on included within it, 
+15:31 < mmorrow> blackdog: i think it's a matter of each .so having the correct list of .so's that its dependent on included within it,
                  which (i'm not positive why) ghc doesn't currently do/have-done
 15:31 -!- Saizan [n=saizan@host19-23-dynamic.9-79-r.retail.telecomitalia.it] has quit [Read error: 110 (Connection timed out)]
-15:32 < mmorrow> blackdog: so i think if you can manage to add this info to your .so files, you'd be ok. i'm not sure about what the 
+15:32 < mmorrow> blackdog: so i think if you can manage to add this info to your .so files, you'd be ok. i'm not sure about what the
                  options are to accomplish this though (maybe ld has some options to modify .so's)
 15:32 < mmorrow> i don't recall the name of the field for ELF, but iirc it's DEPENDS or something like that
-15:35 < blackdog> so if i want to depend on a standard installed package, i'd have to fiddle with the .so files that are being built so 
+15:35 < blackdog> so if i want to depend on a standard installed package, i'd have to fiddle with the .so files that are being built so
                   it knows its dependencies too?
 15:36 < blackdog> i think i need .hi files as well - i need to do some reflection on the interface
 15:39 -!- Saizan [n=saizan@host86-241-static.12-87-b.business.telecomitalia.it] has joined #ghc
@@ -13,32 +13,32 @@
 15:54 -!- Saizan_ [n=saizan@host241-26-dynamic.9-79-r.retail.telecomitalia.it] has quit [Read error: 110 (Connection timed out)]
 16:37 -!- dolio [n=dolio@nr22-66-161-253-70.fuse.net] has quit [Read error: 104 (Connection reset by peer)]
 16:41 -!- dolio [n=dolio@nr22-66-161-253-70.fuse.net] has joined #ghc
-16:46 < mmorrow> blackdog: yeah, fixing the .so files to have the dependency info they should have would fix the linking problem, but 
-                 if you don't know anything about the code you're dlopen()'ing (and you wanted/needed to), you'd need to decode .hi 
+16:46 < mmorrow> blackdog: yeah, fixing the .so files to have the dependency info they should have would fix the linking problem, but
+                 if you don't know anything about the code you're dlopen()'ing (and you wanted/needed to), you'd need to decode .hi
                  files
 16:46 < mmorrow> blackdog: which you'd need to use the ghc-api for
 16:47 < mmorrow> blackdog: the old hs-plugins code that had its own .hi parser is bitrotted
 16:47 < mmorrow> since the binary format for .hi files is unstable
-16:50 < mmorrow> blackdog: although i suppose you could "extract" from ghc what you'd need to decode .hi files, and the associated data 
-                 decls for the contents thereof/etc to avert linking ghc into you app (that'd be nice if the ghc-api itself was in a 
+16:50 < mmorrow> blackdog: although i suppose you could "extract" from ghc what you'd need to decode .hi files, and the associated data
+                 decls for the contents thereof/etc to avert linking ghc into you app (that'd be nice if the ghc-api itself was in a
                  .so..)
 16:54 -!- Saizan_ [n=saizan@host27-5-dynamic.9-79-r.retail.telecomitalia.it] has joined #ghc
 17:07 < blackdog> mmorrow: thanks, that's useful to know. i won't rely wholly on hs-plugins, then
-17:09 < blackdog> so if I want to be able to do it without an installed ghc, I'd better build a .so myself that can do whatever munging 
+17:09 < blackdog> so if I want to be able to do it without an installed ghc, I'd better build a .so myself that can do whatever munging
                   I need, then just embed the dependencies into that and just ship .so files
 17:10 -!- Saizan [n=saizan@host86-241-static.12-87-b.business.telecomitalia.it] has quit [Read error: 110 (Connection timed out)]
-17:10 < blackdog> what would be the semantics of dlopen-ing two haskell .so files and calling them concurrently from C? will horrible 
+17:10 < blackdog> what would be the semantics of dlopen-ing two haskell .so files and calling them concurrently from C? will horrible
                   things happen?
 17:11 < mmorrow> oh, calling them from C.. hmm, i'm not positive.
-17:12 < mmorrow> i know each module has a module init area, where there a .long/.quad in .data that's either 0 or 1, and initializing a 
+17:12 < mmorrow> i know each module has a module init area, where there a .long/.quad in .data that's either 0 or 1, and initializing a
                  module amounts to jumping to some label in that area, and a module will recursively initialize all mods it depends on
-17:13 < mmorrow> i'm not sure exactly though what the deal is if you've got an rts instance, say, then you dlopen a few haskell .so's 
+17:13 < mmorrow> i'm not sure exactly though what the deal is if you've got an rts instance, say, then you dlopen a few haskell .so's
                  from C
-17:14 < blackdog> do you know who would know? it's a difficult thing to test for, it might work fine for a million tests then launch 
+17:14 < blackdog> do you know who would know? it's a difficult thing to test for, it might work fine for a million tests then launch
                   the missiles on the next
-17:14 < mmorrow> blackdog: re: building an .so yourself, aside from ensuring there's the needed .so dep info in the dynamic section (or 
+17:14 < mmorrow> blackdog: re: building an .so yourself, aside from ensuring there's the needed .so dep info in the dynamic section (or
                  whatever), i guess you could go about embedding type/etc info in two ways/at two different levels
-17:15 < mmorrow> the first level being to add that info to each module (say in "interface :: Map String Info"), or alternatively (and 
+17:15 < mmorrow> the first level being to add that info to each module (say in "interface :: Map String Info"), or alternatively (and
                  probably epic) would be to embed that info in the .so file itself somewhere
 17:15 < mmorrow> e.g. ELF has NOTE sections..
 17:15 < blackdog> i think i can probably get away with a bit less information
@@ -46,8 +46,8 @@
 17:16 < mmorrow> blackdog: i'd ask JaffaCake about this
 17:16 < mmorrow> if anyone knew what you need to do/what could do wrong i'd say it'd be him
 17:17 -!- bos [n=bos@67.188.108.77] has quit [Read error: 145 (Connection timed out)]
-17:18 < blackdog> well, i can write a program that uses the ghc-api at compile time to get a list of the identifiers in a given module, 
-                  with their types. I can then filter out the identifiers that don't fit my scheme, and create an SO with the minimal 
+17:18 < blackdog> well, i can write a program that uses the ghc-api at compile time to get a list of the identifiers in a given module,
+                  with their types. I can then filter out the identifiers that don't fit my scheme, and create an SO with the minimal
                   info i need to call it from outside
 17:18 < blackdog> at that stage, the types will be exactly the same, all i need is the names of the wrapper functions
 17:18 < mmorrow> blackdog: totally, that sounds do-able

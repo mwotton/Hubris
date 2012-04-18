@@ -4,7 +4,7 @@ use Rack::ContentLength
 
 require 'pp'
 require 'hubris'
-class Fibonacci 
+class Fibonacci
   hubris :source => 'Fibonacci.hs'
 end
 
