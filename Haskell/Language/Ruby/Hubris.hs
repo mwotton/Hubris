@@ -20,7 +20,7 @@ import Data.Array.IArray
 import Data.Maybe
 import Control.Exception
 import Prelude hiding(catch)
-import Monad hiding (when)
+import Control.Monad hiding (when)
 import Data.Typeable
 
 class Callable a where
