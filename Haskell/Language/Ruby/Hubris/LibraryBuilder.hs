@@ -6,8 +6,7 @@ import Language.Haskell.Interpreter
 -- import Language.Haskell.Meta.QQ.HsHere
 import Language.Ruby.Hubris.GHCBuild
 
-import List(intersperse)
-import Data.List(intercalate)
+import Data.List(intercalate,intersperse)
 import qualified Debug.Trace
 import Control.Applicative
 import Control.Monad

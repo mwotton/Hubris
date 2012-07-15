@@ -1,6 +1,6 @@
 module Main where
 import Language.Ruby.Hubris.LibraryBuilder
-import System
+import System.Environment
 import System.Exit
 -- import Control.Monad (when)
 import System.Console.GetOpt
