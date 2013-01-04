@@ -17,15 +17,16 @@ improve the docs.
 The best docs, as ever, are in the tests, but as a quick precis, you
 can use it a little like this:
 
-    require 'hubris' # best line ever
+```ruby
+require 'hubris' # best line ever
 
-    class Target
-      hubris :inline =>"triple::Int->Int; triple n = 3*n"
-    end
+class Target
+  hubris :inline =>"triple::Int->Int; triple n = 3*n"
+end
 
-    t = Target.new
-    puts t.triple(10)
-       => 30
+t = Target.new
+puts t.triple(10) #=> 30
+```
 
 There are a few restrictions. All functions take one argument and
 return one value: this shouldn't be a major problem because you can
@@ -42,12 +43,16 @@ you'll know you've done the wrong thing.
 
 There are also two other modes:
 
-      hubris :source => "MyCoolModule.hs"
+```ruby
+hubris :source => "MyCoolModule.hs"
+```
 
 which loads a source file on disk (in the same directory as your ruby),
 and
 
-      hubris :module => "Data.ByteString", :packages => ["bytestring"]
+```ruby
+hubris :module => "Data.ByteString", :packages => ["bytestring"]
+```
 
 which will load the Data.ByteString module which is installed on the
 system. In this case, we also need to let the Haskell side know that
@@ -79,7 +84,7 @@ Better instructions for [Linux](http://wiki.github.com/mwotton/Hubris/installati
 * Tatsuhiro Ujihisa
 
 ## License
-
+```
 (The MIT License)
 
 Copyright (c) 2009 Mark Wotton
@@ -102,6 +107,6 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+```
 
 [haskell_platform]: http://hackage.haskell.org/platform/
