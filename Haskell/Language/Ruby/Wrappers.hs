@@ -7,9 +7,7 @@ data RValue = T_FIXNUM Int
             deriving (Eq, Show,Ord)
 
 wrap :: (Haskellable a, Rubyable b) => (a->b) -> (RValue -> RValue)
-wrap func ar = case (toHaskell ar) of
-                Just a ->  toRuby $ func a
-                Nothing -> T_NIL
+wrap func ar = maybe T_NIL (toRuby . func) (toHaskell ar)
 
 class Haskellable a where
   toHaskell :: RValue -> Maybe a

@@ -31,10 +31,12 @@ generateLib libFile sources moduleName buildArgs packages = do
   GHC.parseStaticFlags $ map noLoc $ map ("-package "++) ("hubris":packages)
 
   s <- generateSource sources moduleName
-  case s of
-     Right (c,mod) -> do bindings <- withTempFile "hubris_interface_XXXXX.c" c
-                         ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources [bindings] buildArgs
-     Left x -> return . Left $ show x
+  
+  either (return . Left . show)
+         (\(c,mod) -> do bindings <- withTempFile "hubris_interface_XXXXX.c" c
+                         ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources [bindings] buildArgs)
+         s
+
                                             
 type Funcname = String               
 type Wrapper = String
