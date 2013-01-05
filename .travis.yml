@@ -4,6 +4,7 @@ rvm:
 before_install:
  - sudo apt-get update -qq
  - sudo apt-get install -qq ghc ghc-dynamic cabal-install
+ - cabal install zlib --enable-shared
 before_script:
  - bundle exec rake
 script:
