@@ -20,7 +20,7 @@ Rake::ExtensionTask.new('stub')
 
 # intended to be called by the gem builder
 task :haskell_compile => [:compile] do
-  ghc_version='/usr/bin/ghc' # FIXME, should be able to pick
+  ghc_version='/usr/local/bin/ghc' # FIXME, should be able to pick
   # this out from somewhere
   # write the Includes file
   pwd =`pwd`.strip
@@ -34,7 +34,8 @@ extraIncludeDirs = [\"#{headers}\", \"#{arch_headers}\"]"
 #  command="cd Haskell; cabal update; cabal install
   #  --extra-include-dirs=#{RbConfig::CONFIG['rubyhdrdir']}
   #  --extra-include-dirs=#{RbConfig::CONFIG['rubyhdrdir']}/#{RbConfig::CONFIG['arch']} --extra-lib-dirs=#{RbConfig::CONFIG['libdir']} --user  --enable-shared  --with-ghc=#{ghc_version}"
-  command="cabal update; cd Haskell; cabal install --extra-include-dirs=#{arch_headers} --extra-include-dirs=#{headers} --extra-lib-dirs=#{lib_dir} --user  --enable-shared  --with-ghc=#{ghc_version}"
+  command="cd Haskell; cabal install --extra-include-dirs=#{arch_headers} --extra-include-dirs=#{headers} --extra-lib-dirs=#{lib_dir} --user  --enable-shared  --with-ghc=#{ghc_version}  --verbose --disable-library-profiling"
+  puts "running #{command}"
   result=%x{#{command}}
 end
 
