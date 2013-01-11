@@ -2,7 +2,7 @@ module Main where
 import Language.Ruby.Hubris.LibraryBuilder
 import System.Environment
 import System.Exit
--- import Control.Monad (when)
+import Control.Monad (guard)
 import System.Console.GetOpt
 
 data Options = Options
@@ -55,15 +55,9 @@ hubrisOpts argv =
 main :: IO ()
 main = do
    (o, srcs) <- getArgs >>= hubrisOpts
-   -- HACK this may be the worst thing ever
                       
-   let ghcArgs = if optStrict o
-                 then ["-Wall", "-Werror", "-fno-warn-unused-imports"]
-                 else []
-   -- putStrLn $ show $ optPackages o
+   let ghcArgs = guard (optStrict o) >> ["-Wall", "-Werror", "-fno-warn-unused-imports"]
 
    res <- generateLib (optOutput o) srcs (optModule o) ("-fPIC":ghcArgs) (optPackages o)
-   -- print res
-   case res of
-     Left a  -> putStrLn ("Failed: " ++ a) >> exitFailure
-     Right _ -> exitSuccess
+
+   either (putStrLn . ("Failed: " ++) >> const exitFailure) (const exitSuccess) res
