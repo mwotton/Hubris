@@ -5,6 +5,7 @@ before_install:
  - sudo apt-get update -qq
  - sudo apt-get install -qq ghc ghc-dynamic cabal-install zlib1g-dev
 before_script:
+ - cabal update
  - bundle exec rake
 script:
  - PATH=$HOME/.cabal/bin:$PATH bundle exec rspec spec/hubris_spec.rb
