@@ -34,7 +34,7 @@ generateLib libFile sources moduleName buildArgs packages = do
   
   either (return . Left . show)
          (\(c,mod) -> do bindings <- withTempFile "hubris_interface_XXXXX.c" c
-                         ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources [bindings] buildArgs)
+                         ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources ([bindings] ++ buildArgs))
          s
 
                                             
@@ -47,8 +47,8 @@ callable func = do
   ok <- typeChecks str
   if not ok
      then return Nothing
-     else do res <- interpret str (as::Int)
-             return $ Just res
+     else Just <$> interpret str (as::Int)
+
   where str = "Language.Ruby.Hubris.arity " ++  parens func 
   
 
@@ -161,7 +161,6 @@ haskellBoilerplate moduleName = unlines ["{-# LANGUAGE ForeignFunctionInterface,
 
 
 
--- wrapper = func ++ " b = (Language.Ruby.Hubris.wrap " ++ moduleName ++ "." ++  func ++ ") b", 
 genWrapper (func,arity) mod = unlines $ [func ++ " :: " ++ myType
                                             ,func ++ " " ++  unwords symbolArgs ++ " = " ++ defHask 
                                             ,"foreign export ccall \"hubrish_" ++  func ++ "\" " ++ func ++ " :: " ++ myType]

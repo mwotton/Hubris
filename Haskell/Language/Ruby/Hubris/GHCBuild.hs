@@ -27,14 +27,14 @@ withTempFile pattern code = do (name, handle) <- openTempFile "/tmp" pattern
                                hClose handle
                                return name
 
-ghcBuild :: Filename -> String -> String -> [Filename] -> [Filename] -> [String]-> IO (Either String Filename)
-ghcBuild libFile immediateSource modName extra_sources c_sources args =
+ghcBuild :: Filename -> String -> String -> [Filename] -> [String]-> IO (Either String Filename)
+ghcBuild libFile immediateSource modName extra_sources args =
     do -- putStrLn ("modname is " ++ modName)
           putStrLn immediateSource
           haskellSrcFile <- withTempFile "hubris_XXXXX.hs" immediateSource
           putStrLn ("ghc is " ++ ghc)
           (code, out, err) <- noisySystem ghc $ standardGHCFlags ++ ["-o",libFile,"-optl-Wl,-rpath," ++ libdir,
-                                                                     haskellSrcFile, "-L" ++ libdir] ++ extra_sources ++ c_sources ++ args
+                                                                     haskellSrcFile, "-L" ++ libdir] ++ extra_sources ++ args
           return $ case code of
             ExitSuccess -> Right libFile
             otherCode   -> Left $ unlines ["Errcode: " ++show code,"output: " ++ out, "error: " ++ err]
