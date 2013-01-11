@@ -54,10 +54,9 @@ hubrisOpts argv =
 
 main :: IO ()
 main = do
+
    (o, srcs) <- getArgs >>= hubrisOpts
                       
    let ghcArgs = guard (optStrict o) >> ["-Wall", "-Werror", "-fno-warn-unused-imports"]
-
    res <- generateLib (optOutput o) srcs (optModule o) ("-fPIC":ghcArgs) (optPackages o)
-
-   either (putStrLn . ("Failed: " ++) >> const exitFailure) (const exitSuccess) res
+   either (\x -> putStrLn ("Failed: " ++ x) >> exitFailure) (const exitSuccess) res
