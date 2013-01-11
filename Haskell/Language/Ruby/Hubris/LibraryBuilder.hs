@@ -5,6 +5,7 @@ import Language.Ruby.Hubris
 import Language.Haskell.Interpreter
 -- import Language.Haskell.Meta.QQ.HsHere
 import Language.Ruby.Hubris.GHCBuild
+import Language.Ruby.Hubris.FileUtil 
 
 import Data.List(intercalate,intersperse)
 import qualified Debug.Trace
@@ -14,8 +15,8 @@ import Control.Monad.Error.Class
 import Data.Maybe(catMaybes,fromJust, isJust)
 
 import GHC(parseStaticFlags, noLoc)
-import System.IO(hPutStr, hClose, openTempFile)
-import System.Exit
+
+
 import Language.Ruby.Hubris.ZCode (zenc,Zname(..))
 
 type Filename = String
