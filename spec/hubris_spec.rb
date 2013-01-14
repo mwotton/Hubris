@@ -412,26 +412,26 @@ describe 'Performance' do
   it "behaves concurrently" do
     # create a bunch of ruby threads which all call a given Haskell function
     # repeatedly. Checks that we get the right result, and that we don't crash.
-    pending "Don't wanna run this every time"
-    no_threads = 10
-    reps=1000
-    class ConcTest
-      hubris :inline => "sumInts :: Int -> Int; sumInts n = sum [0..n]"
-    end
-    t = ConcTest.new
+    if ENV['PERFORMANCE_TEST']
+      no_threads = 10
+      reps=1000
+      class ConcTest
+        hubris :inline => "sumInts :: Int -> Int; sumInts n = sum [0..n]"
+      end
+      t = ConcTest.new
     
-    res = (0..no_threads).map { |n| (0..n).inject { |sum,n| sum+n } }
-    threads = []
-    lambda {
-      (0..no_threads).each { |n|
-        threads << Thread.start(n) { |x|
-          reps.times { t.sumInts(x).should eql(res[x]) }
+      res = (0..no_threads).map { |n| (0..n).inject { |sum,n| sum+n } }
+      threads = []
+      lambda {
+        (0..no_threads).each { |n|
+          threads << Thread.start(n) { |x|
+            reps.times { t.sumInts(x).should eql(res[x]) }
+          }
         }
-      }
-      threads.each { |t| t.join }
-    }.should_not raise_error
+        threads.each { |t| t.join }
+      }.should_not raise_error
+    end
   end
- 
 end
 
 describe "IO" do

@@ -8,5 +8,5 @@ before_script:
  - cabal update
  - bundle exec rake
 script:
- - PATH=$HOME/.cabal/bin:$PATH bundle exec rspec spec/hubris_spec.rb
+ - PERF_TEST=1 PATH=$HOME/.cabal/bin:$PATH bundle exec rspec spec/hubris_spec.rb
 env: HUBRIS_DIR=/tmp/hubris
