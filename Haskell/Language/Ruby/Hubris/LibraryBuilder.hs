@@ -1,5 +1,5 @@
 
-{-# LANGUAGE TemplateHaskell, QuasiQuotes, ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Language.Ruby.Hubris.LibraryBuilder where
 import Language.Ruby.Hubris
 import Language.Haskell.Interpreter
@@ -24,18 +24,18 @@ dotrace a b = b
 
 -- weirdly, mapMaybeM doesn't exist.
 mapMaybeM :: (Functor m, Monad m) => (a -> m (Maybe b)) -> [a] -> m [b]
-mapMaybeM func ls  = catMaybes <$> (sequence $ map func ls)
+mapMaybeM func ls  = catMaybes <$> mapM func ls
 
 generateLib :: Filename -> [Filename] -> ModuleName -> [String] -> [String] -> IO (Either Filename String)
 generateLib libFile sources moduleName buildArgs packages = do
   -- set up the static args once  
-  GHC.parseStaticFlags $ map noLoc $ map ("-package "++) ("hubris":packages)
+  GHC.parseStaticFlags $ map (noLoc . ("-package "++)) ("hubris":packages)
 
   s <- generateSource sources moduleName
   
   either (return . Left . show)
          (\(c,mod) -> do bindings <- withTempFile "hubris_interface_XXXXX.c" c
-                         ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources ([bindings] ++ buildArgs))
+                         ghcBuild libFile mod ("Language.Ruby.Hubris.Exports." ++ moduleName) sources (bindings:buildArgs))
          s
 
                                             
@@ -72,17 +72,17 @@ exportable moduleName func = do say $ "checking " ++ qualName
   where qualName = moduleName ++ "." ++ func
         rubyVal = "(fromIntegral $ fromEnum $ Language.Ruby.Hubris.Binding.RUBY_Qtrue)"
         haskellVal = "(Language.Ruby.Hubris.toHaskell " ++ rubyVal ++ ")"
-        genApp qualName i = unwords (qualName:(take i $ repeat haskellVal))
+        genApp qualName i = unwords (qualName:replicate i haskellVal)
                                      
 generateSource :: [Filename] ->   -- optional haskell source to load into the interpreter
                    ModuleName ->   -- name of the module to build a wrapper for
                    IO (Either InterpreterError (String,String))
 generateSource sources moduleName = runInterpreter $ do
          loadModules sources
-         setImportsQ $ [(mod,Just mod) | mod <- ["Language.Ruby.Hubris","Language.Ruby.Hubris.Binding", moduleName]]
+         setImportsQ [(mod,Just mod) | mod <- ["Language.Ruby.Hubris","Language.Ruby.Hubris.Binding", moduleName]]
          funcs <- getFunctions moduleName 
          say ("Candidates: " ++ show funcs)
-         mapM (exportable moduleName) funcs >>= \x -> say (show x)
+         mapM (exportable moduleName) funcs >>= say . show
          exports :: [(Funcname, Int,  Wrapper)] <- mapMaybeM (exportable moduleName) funcs
          say ("Exportable: " ++ show exports)
          -- return (undefined, undefined)
@@ -120,7 +120,7 @@ genC exports (Zname zmoduleName) = unlines $
     cWrapper :: (String,Int) -> String
     cWrapper (f,arity) = 
       let res = unlines 
-                ["VALUE hubrish_" ++ f ++ "("++ (concat . intersperse "," . take arity $ repeat "VALUE") ++ ");",
+                ["VALUE hubrish_" ++ f ++ "("++ (intercalate "," . take arity $ repeat "VALUE") ++ ");",
                  "VALUE " ++ f ++ "(VALUE mod, VALUE v){"
                 ,"  eprintf(\""++f++" has been called\\n\");"
                  -- also needs to curry on the ruby side
@@ -162,10 +162,10 @@ haskellBoilerplate moduleName = unlines ["{-# LANGUAGE ForeignFunctionInterface,
 
 
 
-genWrapper (func,arity) mod = unlines $ [func ++ " :: " ++ myType
+genWrapper (func,arity) mod = unlines  [func ++ " :: " ++ myType
                                             ,func ++ " " ++  unwords symbolArgs ++ " = " ++ defHask 
                                             ,"foreign export ccall \"hubrish_" ++  func ++ "\" " ++ func ++ " :: " ++ myType]
-  where myType = intercalate "->" (take (1+arity) $ repeat " CULong ")
+  where myType = intercalate "->" (replicate (1+arity) " CULong ")
         -- mark's patented gensyms. just awful.
         symbolArgs = take arity $ map ( \ x -> "fake_arg_symbol_"++[x]) ['a' .. 'z']
         defHask = "unsafePerformIO $ do\n  r <- try $ evaluate $ toRuby $" ++ mod ++"."++ func  ++ " " ++ unwords (map (\ x -> "(toHaskell " ++ x ++ ")") symbolArgs) ++ "\n  case r of\n" ++     
