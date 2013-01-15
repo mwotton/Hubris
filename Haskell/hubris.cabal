@@ -41,7 +41,7 @@ Library
         --extra-include-dirs=/opt/local/include/ruby-1.9.1/ 
         --extra-lib-dirs: /opt/local/lib
         extra-libraries: ruby
-        build-depends: ghc, Cabal>=1.7.4 && < 2.0, base, containers, bytestring, array, mtl, old-time, ghc-paths, hint >= 0.3.3.2, HUnit, process,
+        build-depends: ghc, Cabal>=1.7.4 && < 2.0, base, containers, bytestring, array, mtl, old-time, ghc-paths, hint >= 0.3.3.2, HUnit, process, happy,
                        interpolatedstring-perl6
 
 Executable Hubrify
