@@ -7,6 +7,7 @@ before_install:
 before_script:
  - cabal update
  - bundle exec rake
+ - rm -rf $HUBRIS_DIR
 script:
  - PERF_TEST=1 PATH=$HOME/.cabal/bin:$PATH bundle exec rspec spec/hubris_spec.rb
 env: HUBRIS_DIR=/tmp/hubris
