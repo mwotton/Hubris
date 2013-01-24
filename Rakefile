@@ -20,7 +20,7 @@ Rake::ExtensionTask.new('stub')
 
 # intended to be called by the gem builder
 task :haskell_compile => [:compile] do
-  ghc_version=`which ghc`
+  ghc_version=`which ghc`.strip
 
   # write the Includes file
   pwd =`pwd`.strip
