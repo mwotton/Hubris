@@ -94,7 +94,7 @@ module Hubris
   end
   
   def dylib_suffix
-    case Config::CONFIG['target_os']
+    case RbConfig::CONFIG['target_os']
     when /darwin/; "bundle"
     when /linux/;  "so"
     else;          "so" #take a punt

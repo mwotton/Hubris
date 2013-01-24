@@ -20,8 +20,8 @@ Rake::ExtensionTask.new('stub')
 
 # intended to be called by the gem builder
 task :haskell_compile => [:compile] do
-  ghc_version='/usr/bin/ghc' # FIXME, should be able to pick
-  # this out from somewhere
+  ghc_version=`which ghc`.strip
+
   # write the Includes file
   pwd =`pwd`.strip
   arch_headers = "#{RbConfig::CONFIG['rubyhdrdir']}/#{RbConfig::CONFIG['arch']}"
