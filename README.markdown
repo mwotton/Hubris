@@ -1,11 +1,18 @@
 # Hubris
 
+## ON HIATUS/ABANDONED
+
+I work mostly with Haskell now, so the utility of calling Haskell from
+Ruby is not very high. If you're interested in maintaining it, drop me
+a line - it should actually be a lot easier to operationalise it now,
+given cabal sandboxes, but I don't have the time.
+
 ## Description
 
 Hubris is a bridge between Ruby and Haskell, between love and bondage,
 between slothful indolence and raw, blazing speed. Hubris will wash
-your car, lie to your boss, and salvage your love life. If you are 
-very, very lucky, it might also let you get some functional goodness 
+your car, lie to your boss, and salvage your love life. If you are
+very, very lucky, it might also let you get some functional goodness
 into your ruby programs through the back door.
 
 I probably don't have to say this, but patches are very much
