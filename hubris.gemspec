@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'rake-compiler', '>= 0.7.6'
   s.add_development_dependency 'rspec', '2.4.0'
-  s.add_dependency 'rake', '0.8.7'
+  s.add_dependency 'rake', '~> 12.3.3'
   s.add_dependency 'bundler'
   s.add_dependency 'open4'
   s.extensions =  'Rakefile' # ext/mkrf_conf.rb'
